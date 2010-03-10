@@ -4735,14 +4735,6 @@ static void check_for_release(struct cgroup *cgrp)
 }
 
 /* Caller must verify that the css is not for root cgroup */
-void __css_get(struct cgroup_subsys_state *css, int count)
-{
-	atomic_add(count, &css->refcnt);
-	set_bit(CGRP_RELEASABLE, &css->cgroup->flags);
-}
-EXPORT_SYMBOL_GPL(__css_get);
-
-/* Caller must verify that the css is not for root cgroup */
 void __css_put(struct cgroup_subsys_state *css, int count)
 {
 	struct cgroup *cgrp = css->cgroup;
