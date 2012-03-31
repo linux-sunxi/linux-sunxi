@@ -34,6 +34,18 @@ config AMIGA_FLOPPY
 	tristate "Amiga floppy support"
 	depends on AMIGA
 
+config SUN4I_NANDFLASH
+	depends on BLOCK && ARCH_SUN4I
+	tristate "SUN4I Nandflash Driver"
+	---help---
+	  Nand flash driver for SUN4I
+
+config SUN4I_NANDFLASH_TEST
+	depends on SUN4I_NANDFLASH && ARCH_SUN4I
+	tristate "SUN4I Nandflash Test Driver "
+	---help---
+	  Nand flash test driver for SUN4I
+
 config ATARI_FLOPPY
 	tristate "Atari floppy support"
 	depends on ATARI
