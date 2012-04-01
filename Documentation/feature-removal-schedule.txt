@@ -534,18 +534,9 @@ Who:	Kees Cook <keescook@chromium.org>
 
 ----------------------------
 
-What:	setitimer accepts user NULL pointer (value)
-When:	3.6
-Why:	setitimer is not returning -EFAULT if user pointer is NULL. This
-	violates the spec.
-Who:	Sasikantha Babu <sasikanth.v19@gmail.com>
-
-----------------------------
-
-What:	V4L2_CID_HCENTER, V4L2_CID_VCENTER V4L2 controls
-When:	3.7
-Why:	The V4L2_CID_VCENTER, V4L2_CID_HCENTER controls have been deprecated
-	for about 4 years and they are not used by any mainline driver.
-	There are newer controls (V4L2_CID_PAN*, V4L2_CID_TILT*) that provide
-	similar	functionality.
-Who:	Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+What:	cgroup option updates via remount
+When:	March 2013
+Why:	Remount currently allows changing bound subsystems and
+	release_agent.  Rebinding is hardly useful as it only works
+	when the hierarchy is empty and release_agent itself should be
+	replaced with conventional fsnotify.
