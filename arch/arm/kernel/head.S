@@ -224,9 +224,11 @@ __create_page_tables:
 	mov	r3, pc
 	mov	r3, r3, lsr #SECTION_SHIFT
 	orr	r3, r7, r3, lsl #SECTION_SHIFT
+#ifdef CONFIG_ARCH_SUN4I
 	add     r0, r4,  #((0x3000000 + KERNEL_START) & 0xff000000) >> (SECTION_SHIFT - PMD_ORDER)
 	add     r6, r3,  #48 << 20
 	str     r6, [r0, #(((0x3000000 + KERNEL_START) & 0x00f00000) >> SECTION_SHIFT) << PMD_ORDER]!
+#endif
 	add	r0, r4,  #(KERNEL_START & 0xff000000) >> (SECTION_SHIFT - PMD_ORDER)
 	str	r3, [r0, #((KERNEL_START & 0x00f00000) >> SECTION_SHIFT) << PMD_ORDER]!
 	ldr	r6, =(KERNEL_END - 1)
