@@ -216,6 +216,8 @@ void __init sw_init_irq(void)
 
 static struct map_desc sw_io_desc[] __initdata = {
     { SW_VA_SRAM_BASE,          __phys_to_pfn(SW_PA_SRAM_BASE),         SZ_32K, MT_MEMORY_ITCM  },
+    { SW_VA_IO_BASE,            __phys_to_pfn(SW_PA_IO_BASE),           SZ_4M,  MT_DEVICE       },
+#if 0
     { SW_VA_CCM_IO_BASE,        __phys_to_pfn(SW_PA_CCM_IO_BASE),       SZ_1K,  MT_DEVICE       },
     { SW_VA_SRAM_IO_BASE,       __phys_to_pfn(SW_PA_SRAM_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_DRAM_IO_BASE,       __phys_to_pfn(SW_PA_DRAM_IO_BASE),      SZ_4K,  MT_DEVICE       },
@@ -249,6 +251,7 @@ static struct map_desc sw_io_desc[] __initdata = {
     { SW_VA_DEFE1_IO_BASE,      __phys_to_pfn(SW_PA_DEFE1_IO_BASE),     SZ_4K,  MT_DEVICE       },
     { SW_VA_DEBE0_IO_BASE,      __phys_to_pfn(SW_PA_DEBE0_IO_BASE),     SZ_4K,  MT_DEVICE       },
     { SW_VA_DEBE1_IO_BASE,      __phys_to_pfn(SW_PA_DEBE1_IO_BASE),     SZ_4K,  MT_DEVICE       },
+#endif
 
     { SW_VA_SRAM_BROM,          __phys_to_pfn(SW_PA_BROM_START),        SZ_32K, MT_MEMORY_ITCM  },
 };
