@@ -39,8 +39,6 @@
 u32     gpio_g_pioMemBase = 0;
 #define PIOC_REGS_BASE gpio_g_pioMemBase
 
-extern char sys_cofig_data[];
-extern char sys_cofig_data_end[];
 #define __REG(x)                        (*(volatile unsigned int *)(x))
 
 #define PIO_REG_CFG(n, i)               ((volatile unsigned int *)( PIOC_REGS_BASE + ((n)-1)*0x24 + ((i)<<2) + 0x00))
@@ -92,11 +90,7 @@ int gpio_init(void)          //gpio初始化函数接口
 {
 	printk("Init eGon pin module V2.0\n");
 	gpio_g_pioMemBase = (u32)CSP_OSAL_PHY_2_VIRT(CSP_PIN_PHY_ADDR_BASE , CSP_PIN_PHY_ADDR_SIZE);
-    #ifdef FPGA_RUNTIME_ENV
-        return script_parser_init((char *)(sys_cofig_data));
-    #else
         return script_parser_init((char *)__va(CONFIG_SW_SYSMEM_RESERVED_BASE));
-    #endif
 }
 fs_initcall(gpio_init);
 /*
