@@ -993,23 +993,16 @@ void __init arm_mm_memblock_reserve(void)
  * called function.  This means you can't use any function or debugging
  * method which may touch any device, otherwise the kernel _will_ crash.
  */
-#define EARLY_WRITE_OK defined(CONFIG_DEBUG_LL) && !defined(CONFIG_DEBUG_ICEDCC)
 static void __init devicemaps_init(struct machine_desc *mdesc)
 {
 	struct map_desc map;
 	unsigned long addr;
-#if EARLY_WRITE_OK
-	extern int early_write_ok;
-#endif
 
 	/*
 	 * Allocate the vector page early.
 	 */
 	vectors_page = early_alloc(PAGE_SIZE);
 
-#if EARLY_WRITE_OK
-	early_write_ok = 0;
-#endif
 	for (addr = VMALLOC_START; addr; addr += PMD_SIZE)
 		pmd_clear(pmd_off_k(addr));
 
@@ -1074,9 +1067,6 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
 	 */
 	local_flush_tlb_all();
 	flush_cache_all();
-#if EARLY_WRITE_OK
-	early_write_ok = 1;
-#endif
 }
 
 static void __init kmap_init(void)
