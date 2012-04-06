@@ -399,21 +399,27 @@ static void __init sw_fixup(struct tag *tags, char **cmdline,
     u32 size;
 
     pr_info("Lichee System fixup\n");
-    size = DRAMC_get_dram_size();
-
-    if (size <= 512) {
-	    mi->nr_banks=1;
-	    mi->bank[0].start = 0x40000000;
-	    mi->bank[0].size = SZ_1M * (size - 64);
+    if (mi->nr_banks != 0) {
+	    int i;
+	    for (i = 0; i < mi->nr_banks; i++)
+		size += mi->bank[i].size / SZ_1M;
+	    pr_info("Total Configured Memory: %uMB with %d banks\n", size, mi->nr_banks);
     } else {
-	    mi->nr_banks=2;
-	    mi->bank[0].start = 0x40000000;
-	    mi->bank[0].size = SZ_1M * (512 - 64);
-	    mi->bank[1].start = 0x60000000;
-	    mi->bank[1].size = SZ_1M * (size - 512);
-    }
+	    size = DRAMC_get_dram_size();
 
-    pr_info("Total Detected Memory: %uMB with %d banks\n", size, mi->nr_banks);
+	    if (size <= 512) {
+		    mi->nr_banks=1;
+		    mi->bank[0].start = 0x40000000;
+		    mi->bank[0].size = SZ_1M * (size - 64);
+	    } else {
+		    mi->nr_banks=2;
+		    mi->bank[0].start = 0x40000000;
+		    mi->bank[0].size = SZ_1M * (512 - 64);
+		    mi->bank[1].start = 0x60000000;
+		    mi->bank[1].size = SZ_1M * (size - 512);
+	    }
+	    pr_info("Total Detected Memory: %uMB with %d banks\n", size, mi->nr_banks);
+    }
 }
 
 struct sys_timer sw_timer = {
