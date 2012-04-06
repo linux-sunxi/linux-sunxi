@@ -440,6 +440,7 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
 
 	dep->stream_capable = false;
 	dep->desc = NULL;
+	dep->endpoint.desc = NULL;
 	dep->comp_desc = NULL;
 	dep->type = 0;
 	dep->flags = 0;
@@ -485,16 +486,16 @@ static int dwc3_gadget_ep_enable(struct usb_ep *ep,
 
 	switch (usb_endpoint_type(desc)) {
 	case USB_ENDPOINT_XFER_CONTROL:
-		strncat(dep->name, "-control", sizeof(dep->name));
+		strlcat(dep->name, "-control", sizeof(dep->name));
 		break;
 	case USB_ENDPOINT_XFER_ISOC:
-		strncat(dep->name, "-isoc", sizeof(dep->name));
+		strlcat(dep->name, "-isoc", sizeof(dep->name));
 		break;
 	case USB_ENDPOINT_XFER_BULK:
-		strncat(dep->name, "-bulk", sizeof(dep->name));
+		strlcat(dep->name, "-bulk", sizeof(dep->name));
 		break;
 	case USB_ENDPOINT_XFER_INT:
-		strncat(dep->name, "-int", sizeof(dep->name));
+		strlcat(dep->name, "-int", sizeof(dep->name));
 		break;
 	default:
 		dev_err(dwc->dev, "invalid endpoint transfer type\n");
@@ -667,12 +668,20 @@ static void dwc3_prepare_trbs(struct dwc3_ep *dep, bool starting)
 {
 	struct dwc3_request	*req, *n;
 	u32			trbs_left;
+	u32			max;
 	unsigned int		last_one = 0;
 
 	BUILD_BUG_ON_NOT_POWER_OF_2(DWC3_TRB_NUM);
 
 	/* the first request must not be queued */
 	trbs_left = (dep->busy_slot - dep->free_slot) & DWC3_TRB_MASK;
+
+	/* Can't wrap around on a non-isoc EP since there's no link TRB */
+	if (!usb_endpoint_xfer_isoc(dep->desc)) {
+		max = DWC3_TRB_NUM - (dep->free_slot & DWC3_TRB_MASK);
+		if (trbs_left > max)
+			trbs_left = max;
+	}
 
 	/*
 	 * if busy & slot are equal than it is either full or empty. If we are
@@ -1490,7 +1499,7 @@ static void dwc3_endpoint_transfer_complete(struct dwc3 *dwc,
 static void dwc3_gadget_start_isoc(struct dwc3 *dwc,
 		struct dwc3_ep *dep, const struct dwc3_event_depevt *event)
 {
-	u32 uf;
+	u32 uf, mask;
 
 	if (list_empty(&dep->request_list)) {
 		dev_vdbg(dwc->dev, "ISOC ep %s run out for requests.\n",
@@ -1498,16 +1507,10 @@ static void dwc3_gadget_start_isoc(struct dwc3 *dwc,
 		return;
 	}
 
-	if (event->parameters) {
-		u32 mask;
-
-		mask = ~(dep->interval - 1);
-		uf = event->parameters & mask;
-		/* 4 micro frames in the future */
-		uf += dep->interval * 4;
-	} else {
-		uf = 0;
-	}
+	mask = ~(dep->interval - 1);
+	uf = event->parameters & mask;
+	/* 4 micro frames in the future */
+	uf += dep->interval * 4;
 
 	__dwc3_gadget_kick_transfer(dep, uf, 1);
 }

@@ -184,6 +184,8 @@ struct mpage_da_data {
 #define	EXT4_IO_END_UNWRITTEN	0x0001
 #define EXT4_IO_END_ERROR	0x0002
 #define EXT4_IO_END_QUEUED	0x0004
+#define EXT4_IO_END_DIRECT	0x0008
+#define EXT4_IO_END_IN_FSYNC	0x0010
 
 struct ext4_io_page {
 	struct page	*p_page;

@@ -1805,13 +1805,13 @@ retry:
 						| BB_LEN(internal_bb));
 				*bbp++ = cpu_to_le64(store_bb);
 			}
+			bb->changed = 0;
 			if (read_seqretry(&bb->lock, seq))
 				goto retry;
 
 			bb->sector = (rdev->sb_start +
 				      (int)le32_to_cpu(sb->bblog_offset));
 			bb->size = le16_to_cpu(sb->bblog_size);
-			bb->changed = 0;
 		}
 	}
 
@@ -2366,6 +2366,7 @@ repeat:
 			clear_bit(MD_CHANGE_PENDING, &mddev->flags);
 			list_for_each_entry(rdev, &mddev->disks, same_set) {
 				if (rdev->badblocks.changed) {
+					rdev->badblocks.changed = 0;
 					md_ack_all_badblocks(&rdev->badblocks);
 					md_error(mddev, rdev);
 				}
@@ -8157,30 +8158,23 @@ static int md_notify_reboot(struct notifier_block *this,
 	struct mddev *mddev;
 	int need_delay = 0;
 
-	if ((code == SYS_DOWN) || (code == SYS_HALT) || (code == SYS_POWER_OFF)) {
-
-		printk(KERN_INFO "md: stopping all md devices.\n");
-
-		for_each_mddev(mddev, tmp) {
-			if (mddev_trylock(mddev)) {
-				/* Force a switch to readonly even array
-				 * appears to still be in use.  Hence
-				 * the '100'.
-				 */
-				md_set_readonly(mddev, 100);
-				mddev_unlock(mddev);
-			}
-			need_delay = 1;
+	for_each_mddev(mddev, tmp) {
+		if (mddev_trylock(mddev)) {
+			__md_stop_writes(mddev);
+			mddev->safemode = 2;
+			mddev_unlock(mddev);
 		}
-		/*
-		 * certain more exotic SCSI devices are known to be
-		 * volatile wrt too early system reboots. While the
-		 * right place to handle this issue is the given
-		 * driver, we do want to have a safe RAID driver ...
-		 */
-		if (need_delay)
-			mdelay(1000*1);
+		need_delay = 1;
 	}
+	/*
+	 * certain more exotic SCSI devices are known to be
+	 * volatile wrt too early system reboots. While the
+	 * right place to handle this issue is the given
+	 * driver, we do want to have a safe RAID driver ...
+	 */
+	if (need_delay)
+		mdelay(1000*1);
+
 	return NOTIFY_DONE;
 }
 
