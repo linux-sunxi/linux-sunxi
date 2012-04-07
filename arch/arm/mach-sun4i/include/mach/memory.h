@@ -23,7 +23,7 @@
 /*
  * Physical DRAM offset.
  */
-#define PHYS_OFFSET	UL(0x40000000)
+#define PLAT_PHYS_OFFSET	UL(0x40000000)
 
 #define __HERE__() printk("debug hear: %s %d\n", __FUNCTION__, __LINE__)
 #endif
