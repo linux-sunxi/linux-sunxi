@@ -768,7 +768,7 @@ config ARCH_SUN4I
 	select CPU_V7
 	select ARM_AMBA
 	select HAVE_CLK
-	select ARM_VIC
+	#select ARM_VIC
 	select ZONE_DMA
 	select ARCH_HAS_CPUFREQ
 	#select CHIP_ID
