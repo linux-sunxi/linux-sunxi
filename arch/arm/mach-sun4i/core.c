@@ -229,28 +229,13 @@ void __init sw_init_irq(void)
 
 static struct map_desc sw_io_desc[] __initdata = {
     { SW_VA_SRAM_BASE,          __phys_to_pfn(SW_PA_SRAM_BASE),         SZ_32K, MT_MEMORY_ITCM  },
-    { SW_VA_IO_BASE,            __phys_to_pfn(SW_PA_IO_BASE),           SZ_4M,  MT_DEVICE       },
-#if 0
-    { SW_VA_CCM_IO_BASE,        __phys_to_pfn(SW_PA_CCM_IO_BASE),       SZ_1K,  MT_DEVICE       },
     { SW_VA_SRAM_IO_BASE,       __phys_to_pfn(SW_PA_SRAM_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_DRAM_IO_BASE,       __phys_to_pfn(SW_PA_DRAM_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_DMAC_IO_BASE,       __phys_to_pfn(SW_PA_DMAC_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_NANDFLASHC_IO_BASE, __phys_to_pfn(SW_PA_NANDFLASHC_IO_BASE),SZ_4K,  MT_DEVICE       },
-    { SW_VA_INT_IO_BASE,        __phys_to_pfn(SW_PA_INT_IO_BASE),       SZ_1K,  MT_DEVICE       },
-    { SW_VA_PORTC_IO_BASE,      __phys_to_pfn(SW_PA_PORTC_IO_BASE),     SZ_1K,  MT_DEVICE       },
-    { SW_VA_TIMERC_IO_BASE,     __phys_to_pfn(SW_PA_TIMERC_IO_BASE),    SZ_1K,  MT_DEVICE       },
-    { SW_VA_UART0_IO_BASE,      __phys_to_pfn(SW_PA_UART0_IO_BASE),     SZ_1K,  MT_DEVICE       },
-    { SW_VA_SID_IO_BASE,        __phys_to_pfn(SW_PA_SID_IO_BASE),       SZ_1K,  MT_DEVICE       },
-    { SW_VA_TP_IO_BASE,         __phys_to_pfn(SW_PA_TP_IO_BASE),        SZ_1K,  MT_DEVICE       },
-    { SW_VA_LRADC_IO_BASE,      __phys_to_pfn(SW_PA_LRADC_IO_BASE),     SZ_1K,  MT_DEVICE       },
-    { SW_VA_IR0_IO_BASE,        __phys_to_pfn(SW_PA_IR0_IO_BASE),       SZ_1K,  MT_DEVICE       },
-    { SW_VA_TWI0_IO_BASE,       __phys_to_pfn(SW_PA_TWI0_IO_BASE),      SZ_1K,  MT_DEVICE       },
-    { SW_VA_TWI1_IO_BASE,       __phys_to_pfn(SW_PA_TWI1_IO_BASE),      SZ_1K,  MT_DEVICE       },
-    { SW_VA_TWI2_IO_BASE,       __phys_to_pfn(SW_PA_TWI2_IO_BASE),      SZ_1K,  MT_DEVICE       },
     { SW_VA_USB0_IO_BASE,       __phys_to_pfn(SW_PA_USB0_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_USB1_IO_BASE,       __phys_to_pfn(SW_PA_USB1_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_USB2_IO_BASE,       __phys_to_pfn(SW_PA_USB2_IO_BASE),      SZ_4K,  MT_DEVICE       },
-    { SW_VA_GPS_IO_BASE,        __phys_to_pfn(SW_PA_GPS_IO_BASE),       SZ_64K, MT_DEVICE       },
 
     { SW_VA_TVE0_IO_BASE,       __phys_to_pfn(SW_PA_TVE0_IO_BASE),      SZ_4K,  MT_DEVICE       },
     { SW_VA_TVE1_IO_BASE,       __phys_to_pfn(SW_PA_TVE1_IO_BASE),      SZ_4K,  MT_DEVICE       },
@@ -260,11 +245,25 @@ static struct map_desc sw_io_desc[] __initdata = {
 
     { SW_VA_HDMI_IO_BASE,       __phys_to_pfn(SW_PA_HDMI_IO_BASE),      SZ_4K,  MT_DEVICE       },
 
+    { SW_VA_CCM_IO_BASE,        __phys_to_pfn(SW_PA_CCM_IO_BASE),       SZ_1K,  MT_DEVICE       },
+//  { SW_VA_INT_IO_BASE,        __phys_to_pfn(SW_PA_INT_IO_BASE),       SZ_1K,  MT_DEVICE       },
+//  { SW_VA_PORTC_IO_BASE,      __phys_to_pfn(SW_PA_PORTC_IO_BASE),     SZ_1K,  MT_DEVICE       },
+//  { SW_VA_TIMERC_IO_BASE,     __phys_to_pfn(SW_PA_TIMERC_IO_BASE),    SZ_1K,  MT_DEVICE       },
+    { SW_VA_IR0_IO_BASE,        __phys_to_pfn(SW_PA_IR0_IO_BASE),       SZ_1K,  MT_DEVICE       },
+    { SW_VA_LRADC_IO_BASE,      __phys_to_pfn(SW_PA_LRADC_IO_BASE),     SZ_1K,  MT_DEVICE       },
+    { SW_VA_SID_IO_BASE,        __phys_to_pfn(SW_PA_SID_IO_BASE),       SZ_1K,  MT_DEVICE       },
+    { SW_VA_TP_IO_BASE,         __phys_to_pfn(SW_PA_TP_IO_BASE),        SZ_1K,  MT_DEVICE       },
+    { SW_VA_UART0_IO_BASE,      __phys_to_pfn(SW_PA_UART0_IO_BASE),     SZ_1K,  MT_DEVICE       },
+    { SW_VA_TWI0_IO_BASE,       __phys_to_pfn(SW_PA_TWI0_IO_BASE),      SZ_1K,  MT_DEVICE       },
+    { SW_VA_TWI1_IO_BASE,       __phys_to_pfn(SW_PA_TWI1_IO_BASE),      SZ_1K,  MT_DEVICE       },
+//  { SW_VA_TWI2_IO_BASE,       __phys_to_pfn(SW_PA_TWI2_IO_BASE),      SZ_1K,  MT_DEVICE       },
+
+    { SW_VA_GPS_IO_BASE,        __phys_to_pfn(SW_PA_GPS_IO_BASE),       SZ_64K, MT_DEVICE       },
+
     { SW_VA_DEFE0_IO_BASE,      __phys_to_pfn(SW_PA_DEFE0_IO_BASE),     SZ_4K,  MT_DEVICE       },
     { SW_VA_DEFE1_IO_BASE,      __phys_to_pfn(SW_PA_DEFE1_IO_BASE),     SZ_4K,  MT_DEVICE       },
     { SW_VA_DEBE0_IO_BASE,      __phys_to_pfn(SW_PA_DEBE0_IO_BASE),     SZ_4K,  MT_DEVICE       },
     { SW_VA_DEBE1_IO_BASE,      __phys_to_pfn(SW_PA_DEBE1_IO_BASE),     SZ_4K,  MT_DEVICE       },
-#endif
 
     { SW_VA_SRAM_BROM,          __phys_to_pfn(SW_PA_BROM_START),        SZ_32K, MT_MEMORY_ITCM  },
 };
@@ -500,6 +499,7 @@ MACHINE_START(SUN4I, "sun4i")
 	.init_machine   = sw_init,
 	.atag_offset	= 0x100,
 	.restart	= sun4i_restart,
+//	.handle_irq	= vic_handle_irq,
 MACHINE_END
 
 
