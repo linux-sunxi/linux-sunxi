@@ -51,6 +51,14 @@ config AD525X_DPOT_SPI
 	  To compile this driver as a module, choose M here: the
 	  module will be called ad525x_dpot-spi.
 
+config SUN4I_GPIO_UGLY
+	tristate "An ugly sun4i gpio driver"
+	help
+	  Say Y here if you want to use gpio as general input/output.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called sun4i-gpio.
+
 config ATMEL_PWM
 	tristate "Atmel AT32/AT91 PWM support"
 	depends on HAVE_CLK
