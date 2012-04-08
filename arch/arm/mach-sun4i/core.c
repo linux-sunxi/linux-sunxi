@@ -271,37 +271,6 @@ static struct device sw_dev = {
     .bus = &sw_subsys,
 };
 
-static u32 DRAMC_get_dram_size(void)
-{
-    u32 reg_val;
-    u32 dram_size;
-    u32 chip_den;
-
-    reg_val = readl(SW_DRAM_SDR_DCR);
-    chip_den = (reg_val>>3)&0x7;
-    if(chip_den == 0)
-        dram_size = 32;
-    else if(chip_den == 1)
-        dram_size = 64;
-    else if(chip_den == 2)
-        dram_size = 128;
-    else if(chip_den == 3)
-        dram_size = 256;
-    else if(chip_den == 4)
-        dram_size = 512;
-    else
-        dram_size = 1024;
-
-    if( ((reg_val>>1)&0x3) == 0x1)
-        dram_size<<=1;
-    if( ((reg_val>>6)&0x7) == 0x3)
-        dram_size<<=1;
-    if( ((reg_val>>10)&0x3) == 0x1)
-        dram_size<<=1;
-
-    return dram_size;
-}
-
 extern unsigned long fb_start;
 extern unsigned long fb_size;
 extern unsigned long gps_start;
@@ -311,7 +280,6 @@ extern unsigned long g2d_size;
 
 static int __init sw_core_init(void)
 {
-    pr_info("DRAM Size: %u\n", DRAMC_get_dram_size());
     return subsys_system_register(&sw_subsys, NULL);
 }
 core_initcall(sw_core_init);
@@ -396,30 +364,7 @@ static void __init sw_reserve(void)
 static void __init sw_fixup(struct tag *tags, char **cmdline,
 			    struct meminfo *mi)
 {
-    u32 size;
-
     pr_info("Lichee System fixup\n");
-    if (mi->nr_banks != 0) {
-	    int i;
-	    for (i = 0; i < mi->nr_banks; i++)
-		size += mi->bank[i].size / SZ_1M;
-	    pr_info("Total Configured Memory: %uMB with %d banks\n", size, mi->nr_banks);
-    } else {
-	    size = DRAMC_get_dram_size();
-
-	    if (size <= 512) {
-		    mi->nr_banks=1;
-		    mi->bank[0].start = 0x40000000;
-		    mi->bank[0].size = SZ_1M * (size - 64);
-	    } else {
-		    mi->nr_banks=2;
-		    mi->bank[0].start = 0x40000000;
-		    mi->bank[0].size = SZ_1M * (512 - 64);
-		    mi->bank[1].start = 0x60000000;
-		    mi->bank[1].size = SZ_1M * (size - 512);
-	    }
-	    pr_info("Total Detected Memory: %uMB with %d banks\n", size, mi->nr_banks);
-    }
 }
 
 struct sys_timer sw_timer = {
