@@ -366,7 +366,7 @@ ssize_t disp_write(struct file *file, const char __user *buf, size_t count, loff
     return 0;
 }
 
-static int __init disp_probe(struct platform_device *pdev)//called when platform_driver_register
+static int __devinit disp_probe(struct platform_device *pdev) //called when platform_driver_register
 {
 	fb_info_t * info = NULL;
 
