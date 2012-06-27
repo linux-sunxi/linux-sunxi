@@ -27,6 +27,22 @@
 //delete this line if you want to use the lcd para define in sys_config1.fex
 //#define LCD_PARA_USE_CONFIG
 
+#define CMD_WIRTE_DELAY 2
+
+//#define SPI_DATA_PRINT 
+
+#ifdef SPI_DATA_PRINT	
+#define lcd_spi_dbg(x,arg...) printk(KERN_INFO"[LCD_SPI]"x,##arg)
+#else
+#define lcd_spi_dbg(x,arg...)
+#endif
+
+static	__s32 lcd_spi_cs = 0;
+static	__s32 lcd_spi_clk = 0;
+static	__s32 lcd_spi_mosi = 0;
+static	__s32 lcd_spi_used = 0;
+static	__s32 lcd_spi_module = -1;
+	
 #ifdef LCD_PARA_USE_CONFIG
 static __u8 g_gamma_tbl[][2] = 
 {
@@ -115,9 +131,156 @@ static void LCD_cfg_panel_info(__panel_para_t * info)
 }
 #endif
 
+void LCD_SPI_Init(__u32 sel)
+{
+		if( SCRIPT_PARSER_OK != OSAL_Script_FetchParser_Data("lcd_spi_para", "lcd_spi_used", &lcd_spi_used, 1) ){
+			 __inf("LCD SPI doesn't use.\n");
+			 return;
+		}
+		if (0 == lcd_spi_used){
+			 __inf("LCD SPI doesn't use.\n");
+			 return;
+		}
+		if( SCRIPT_PARSER_OK != OSAL_Script_FetchParser_Data("lcd_spi_para", "lcd_spi_module", &lcd_spi_module, 1) ){
+			__wrn("There is no LCD SPI module input.\n");
+			return;
+		}
+		
+		lcd_spi_cs = OSAL_GPIO_Request_Ex("lcd_spi_para", "lcd_spi_cs");
+		if(!lcd_spi_cs) {
+			__wrn("request gpio lcd_spi_cs error.\n");
+			goto ERR1;
+		}
+		lcd_spi_clk = OSAL_GPIO_Request_Ex("lcd_spi_para", "lcd_spi_clk");
+		if(!lcd_spi_clk) {
+			__wrn("request gpio lcd_spi_clk error.\n");
+			goto ERR2;
+		}
+		lcd_spi_mosi = OSAL_GPIO_Request_Ex("lcd_spi_para", "lcd_spi_mosi");
+		if(!lcd_spi_mosi) {
+			__wrn("request gpio lcd_spi_mosi error.\n");
+			goto ERR3;
+		}
+	  return;
+	  
+		lcd_spi_dbg("release GPIO src : lcd_spi_mosi\n");
+		OSAL_GPIO_Release(lcd_spi_mosi, 2);
+ERR3:
+		lcd_spi_dbg("release GPIO src : lcd_spi_clk\n");
+		OSAL_GPIO_Release(lcd_spi_clk, 2);
+ERR2:
+		lcd_spi_dbg("release GPIO src : lcd_spi_cs\n");
+		OSAL_GPIO_Release(lcd_spi_cs, 2);
+ERR1:
+    return;
+}
+
+void LCD_SPI_Write(__u32 sel)
+{
+		int i = 0, j = 0, offset = 0, bit_val = 0, ret = 0;
+		u16 data[9] = { // module 0 data
+						0x0029,	//reset
+						0x0025,	//standby
+						0x0840,	//enable normally black
+						0x0430,	//enable FRC/dither
+						0x385f,	//enter test mode(1)
+						0x3ca4,	//enter test mode(2)
+						0x3409,	//enable SDRRS, enlarge OE width
+						0x4041,	//adopt 2 line / 1 dot
+						//wait 100ms
+						0x00ad,	//display on
+						};		
+
+	lcd_spi_dbg("============ start LCD SPI data write, module = %d============\n", lcd_spi_module);
+
+	switch(lcd_spi_module)
+	{
+		case 0: // rili 7inch
+		{
+			for(i = 0; i < 8; i++) {
+				OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_cs, 0, "lcd_spi_cs");
+				lcd_spi_dbg("write data[%d]:", i);
+				for(j = 0; j < 16; j++) {
+					OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_clk, 0, "lcd_spi_clk");
+					offset = 15 - j;
+					bit_val = (0x0001 & (data[i]>>offset));
+					ret = OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_mosi, bit_val, "lcd_spi_mosi");
+#ifdef SPI_DATA_PRINT			
+					if(ret == 0) {
+						lcd_spi_dbg("%d-", bit_val);
+					} else {
+						lcd_spi_dbg("write[bit:%d]ERR", j);
+					}	
+#endif					
+					LCD_delay_us(CMD_WIRTE_DELAY);
+					OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_clk, 1, "lcd_spi_clk");
+					LCD_delay_us(CMD_WIRTE_DELAY);
+				}
+			
+				lcd_spi_dbg("\n");
+				OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_cs, 1, "lcd_spi_cs");
+				OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_clk, 1, "lcd_spi_clk");
+				LCD_delay_us(CMD_WIRTE_DELAY);
+			}			
+			LCD_delay_ms(50);			
+			OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_cs, 0, "lcd_spi_cs");
+		
+			lcd_spi_dbg("write data[8]:");
+			
+			for(j = 0; j < 16; j++) {
+					OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_clk, 0, "lcd_spi_clk");
+					offset = 15 - j;
+					bit_val = (0x0001 & (data[i]>>offset));
+					ret = OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_mosi, bit_val, "lcd_spi_mosi");
+#ifdef SPI_DATA_PRINT			
+					if(ret == 0) {
+						lcd_spi_dbg("%d-", bit_val);
+					} else {
+						lcd_spi_dbg("write[bit:%d]ERR", j);
+					}
+#endif						
+					LCD_delay_us(CMD_WIRTE_DELAY);
+					OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_clk, 1, "lcd_spi_clk");
+					LCD_delay_us(CMD_WIRTE_DELAY);
+				}
+				
+			lcd_spi_dbg("\n");
+			OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_cs, 1, "lcd_spi_cs");
+			OSAL_GPIO_DevWRITE_ONEPIN_DATA(lcd_spi_clk, 1, "lcd_spi_clk");
+			LCD_delay_us(CMD_WIRTE_DELAY);	
+			lcd_spi_dbg("========== LCD SPI data translation finished ===========\n");			
+			break;
+		}
+		default:
+		{
+			lcd_spi_dbg("%s Unknow lcd_spi_module\n", __func__);	
+			break;
+		}
+	}
+}
+
+void LCD_SPI_Dinit(__u32 sel)
+{
+		lcd_spi_dbg("release GPIO src : lcd_spi_mosi\n");
+		if (lcd_spi_mosi){
+			OSAL_GPIO_Release(lcd_spi_mosi, 2);
+	  }
+
+		lcd_spi_dbg("release GPIO src : lcd_spi_clk\n");
+		if (lcd_spi_clk){
+			OSAL_GPIO_Release(lcd_spi_clk, 2);
+	  }
+		lcd_spi_dbg("release GPIO src : lcd_spi_cs\n");
+		if (lcd_spi_cs){
+			OSAL_GPIO_Release(lcd_spi_cs, 2);
+		}
+}
+
 static __s32 LCD_open_flow(__u32 sel)
 {
 	LCD_OPEN_FUNC(sel, LCD_power_on, 50);   //open lcd power, and delay 50ms
+	LCD_OPEN_FUNC(sel, LCD_SPI_Init, 20);  //request and init gpio, and delay 20ms
+	LCD_OPEN_FUNC(sel, LCD_SPI_Write, 10);  //use gpio to config lcd module to the  work mode, and delay 10ms
 	LCD_OPEN_FUNC(sel, TCON_open, 500);     //open lcd controller, and delay 500ms
 	LCD_OPEN_FUNC(sel, LCD_bl_open, 0);     //open lcd backlight, and delay 0ms
 
@@ -128,6 +291,7 @@ static __s32 LCD_close_flow(__u32 sel)
 {	
 	LCD_CLOSE_FUNC(sel, LCD_bl_close, 0);       //close lcd backlight, and delay 0ms
 	LCD_CLOSE_FUNC(sel, TCON_close, 0);         //close lcd controller, and delay 0ms
+	LCD_CLOSE_FUNC(sel, LCD_SPI_Dinit, 0); 	 //release gpio, and delay 0ms
 	LCD_CLOSE_FUNC(sel, LCD_power_off, 1000);   //close lcd power, and delay 1000ms
 
 	return 0;
