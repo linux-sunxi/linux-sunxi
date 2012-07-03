@@ -13,4 +13,6 @@ config SW_DEBUG_UART
 	  Choose the UART on which kernel low-level debug messages should be
 	  output.
 
+source "arch/arm/mach-sun4i/wifi/Kconfig"
+
 endif

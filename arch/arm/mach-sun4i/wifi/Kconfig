@@ -1,0 +1,4 @@
+config SUN4I_RTL8192CU
+	tristate "Enable RTL8192CU chip"
+	depends on RTL8192CU
+	default n
