@@ -63,6 +63,8 @@ extern __s32 pwm_get_para(__u32 channel, __pwm_info_t * pwm_info);
 #define OSAL_Script_FetchParser_Data script_parser_fetch
 #define OSAL_GPIO_Request gpio_request
 #define OSAL_GPIO_Release gpio_release
+#define OSAL_GPIO_Request_Ex gpio_request_ex
+#define OSAL_GPIO_DevWRITE_ONEPIN_DATA gpio_write_one_pin_value
 
 #define BIT0		  0x00000001  
 #define BIT1		  0x00000002  
