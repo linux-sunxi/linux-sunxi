@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/nandtest/nand_test.c
+ * drivers/block/sunxi_nand/nandtest/nand_test.c
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
@@ -54,7 +54,7 @@
 
 #include "nand_test.h"
 
-#ifdef CONFIG_SUN4I_NANDFLASH_TEST     //  open nand test module
+#ifdef CONFIG_SUNXI_NANDFLASH_TEST     //  open nand test module
 
 #define NAND_TEST  "[nand_test]:"
 

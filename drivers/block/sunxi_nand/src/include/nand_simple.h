@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/src/include/nand_simple.h
+ * drivers/block/sunxi_nand/src/include/nand_simple.h
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/nfd/mbr.c
+ * drivers/block/sunxi_nand/nfd/mbr.c
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

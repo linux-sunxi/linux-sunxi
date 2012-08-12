@@ -1,5 +1,5 @@
 
-obj-$(CONFIG_SUN4I_NANDFLASH)  += nand.o
+obj-$(CONFIG_SUNXI_NANDFLASH)  += nand.o
 nand-y := nand_blk.o  dma_for_nand.o int_for_nand.o mbr.o \
          ../src/format/nand_format.o \
          ../src/logic/bad_manage.o ../src/logic/logic_ctl.o ../src/logic/mapping.o ../src/logic/mapping_base.o ../src/logic/merge.o ../src/logic/read_reclaim.o ../src/logic/wear_levelling.o ../src/logic/logic_cache.o \

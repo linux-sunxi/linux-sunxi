@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/nfd/nand_private.h
+ * drivers/block/sunxi_nand/nfd/nand_private.h
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

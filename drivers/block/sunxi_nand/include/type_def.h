@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/include/type_def.h
+ * drivers/block/sunxi_nand/include/type_def.h
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

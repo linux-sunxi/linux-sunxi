@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/nandtest/nand_test.h
+ * drivers/block/sunxi_nand/nandtest/nand_test.h
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

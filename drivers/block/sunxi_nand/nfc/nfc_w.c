@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/nfc/nfc_w.c
+ * drivers/block/sunxi_nand/nfc/nfc_w.c
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

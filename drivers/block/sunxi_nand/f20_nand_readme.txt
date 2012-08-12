@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/f20_nand_readme.txt
+ * drivers/block/sunxi_nand/f20_nand_readme.txt
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

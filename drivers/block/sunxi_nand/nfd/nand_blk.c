@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/nfd/nand_blk.c
+ * drivers/block/sunxi_nand/nfd/nand_blk.c
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
@@ -1323,7 +1323,7 @@ __u32 nand_get_module_clk(void)
 
 #endif
 
-#ifndef CONFIG_SUN4I_NANDFLASH_TEST
+#ifndef CONFIG_SUNXI_NANDFLASH_TEST
 static int __init init_blklayer(void)
 {
 	int ret;
@@ -1468,7 +1468,7 @@ static void  __exit exit_blklayer(void)
 }
 #endif
 
-#ifdef CONFIG_SUN4I_NANDFLASH_TEST
+#ifdef CONFIG_SUNXI_NANDFLASH_TEST
 int nand_suspend(struct platform_device *plat_dev, pm_message_t state)
 #else
 static int nand_suspend(struct platform_device *plat_dev, pm_message_t state)
@@ -1501,7 +1501,7 @@ static int nand_suspend(struct platform_device *plat_dev, pm_message_t state)
 	}
 }
 
-#ifdef CONFIG_SUN4I_NANDFLASH_TEST
+#ifdef CONFIG_SUNXI_NANDFLASH_TEST
 int nand_resume(struct platform_device *plat_dev)
 #else
 static int nand_resume(struct platform_device *plat_dev)

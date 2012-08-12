@@ -2,5 +2,5 @@
 # $Id$
 #########################################################################
 
-obj-$(CONFIG_SUN4I_NANDFLASH_TEST) +=nand_test.o
+obj-$(CONFIG_SUNXI_NANDFLASH_TEST) +=nand_test.o
 

@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/include/sunii.h
+ * drivers/block/sunxi_nand/include/sunii.h
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>

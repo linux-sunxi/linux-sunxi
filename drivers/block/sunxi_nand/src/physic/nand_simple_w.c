@@ -1,5 +1,5 @@
 /*
- * drivers/block/sun4i_nand/src/physic/nand_simple_w.c
+ * drivers/block/sunxi_nand/src/physic/nand_simple_w.c
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
