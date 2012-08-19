@@ -59,6 +59,7 @@ typedef struct
 
     __disp_init_t           disp_init;
 
+
     __bool                  fb_enable[FB_MAX];
     __fb_mode_t             fb_mode[FB_MAX];
     __u32                   layer_hdl[FB_MAX][2];//[fb_id][0]:screen0 layer handle;[fb_id][1]:screen1 layer handle
@@ -66,6 +67,7 @@ typedef struct
     __disp_fb_create_para_t fb_para[FB_MAX];
 	wait_queue_head_t       wait[2];
 	unsigned long           wait_count[2];
+	__u32 pseudo_palette [FB_MAX][16];
 }fb_info_t;
 
 typedef struct
