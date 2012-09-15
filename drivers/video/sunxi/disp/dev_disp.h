@@ -74,11 +74,12 @@ typedef struct
 #ifdef CONFIG_FB_SUNXI_UMP
 	ump_dd_handle ump_wrapped_buffer[FB_MAX];
 #endif
+} fb_info_t;
 
+#ifdef CONFIG_FB_SUNXI_UMP
 extern ump_dd_handle ump_dd_handle_create_from_phys_blocks(ump_dd_physical_block * blocks, unsigned long num_blocks);
 #endif
 
-}fb_info_t;
 
 typedef struct
 {
@@ -130,7 +131,7 @@ extern __s32 DRV_lcd_close(__u32 sel);
 extern __s32 Fb_Init(__u32 from);
 extern __s32 Fb_Exit(void);
 #ifdef CONFIG_FB_SUNXI_UMP
-extern int (*disp_get_ump_secure_id)(fb_info *info, unsigned long arg);
+extern int (*disp_get_ump_secure_id)(struct fb_info *info, unsigned long arg);
 #endif
 
 #endif

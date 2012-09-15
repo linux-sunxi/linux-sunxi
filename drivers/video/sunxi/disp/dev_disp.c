@@ -28,6 +28,8 @@
 #endif
 
 fb_info_t g_fbi;
+EXPORT_SYMBOL(g_fbi);
+
 __disp_drv_t g_disp_drv;
 
 #define MY_BYTE_ALIGN(x) ( ( (x + (4*1024-1)) >> 12) << 12)             /* alloc based on 4K byte */

@@ -22,7 +22,7 @@
 
 #include "dev_disp.h"
 
-static _disp_get_ump_dd_secure_id(fb_info *info, unsigned long arg)
+static int _disp_get_ump_dd_secure_id(struct fb_info *info, unsigned long arg)
 {
 	u32 __user *psecureid = (u32 __user *) arg;
 	ump_secure_id secure_id;
@@ -39,18 +39,18 @@ static _disp_get_ump_dd_secure_id(fb_info *info, unsigned long arg)
 int __init disp_ump_module_init(void)
 {
 	int ret = 0;
-	disp_get_ump_dd_secure_id = _disp_get_ump_dd_secure_id;
+	disp_get_ump_secure_id = _disp_get_ump_dd_secure_id;
 
 	return ret;
 }
 
 static void __exit disp_ump_module_exit(void)
 {
-	disp_get_ump_dd_secure_id = NULL;
+	disp_get_ump_secure_id = NULL;
 }
 
-module_init(disp_module_init);
-module_exit(disp_module_exit);
+module_init(disp_ump_module_init);
+module_exit(disp_ump_module_exit);
 
 MODULE_AUTHOR("Henrik Nordstrom <henrik@henriknordstrom.net>");
 MODULE_DESCRIPTION("sunxi display driver MALI UMP module glue");

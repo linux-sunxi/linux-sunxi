@@ -27,7 +27,9 @@
 #include <linux/kernel.h>
 #include <linux/fb.h>
 
-extern fb_info_t g_fbi;
+#ifdef CONFIG_FB_SUNXI_UMP
+#include <ump/ump_kernel_interface.h>
+#endif
 
 #define FBHANDTOID(handle)  ((handle) - 100)
 #define FBIDTOHAND(ID)  ((ID) + 100)
@@ -1043,7 +1045,7 @@ __s32 DRV_disp_int_process(__u32 sel)
 }
 
 #ifdef CONFIG_FB_SUNXI_UMP
-int (*disp_get_ump_secure_id)(fb_info *info, unsigned long arg);
+int (*disp_get_ump_secure_id)(struct fb_info *info, unsigned long arg);
 EXPORT_SYMBOL(disp_get_ump_secure_id);
 #endif
 
@@ -1123,7 +1125,7 @@ static int Fb_ioctl(struct fb_info *info, unsigned int cmd,unsigned long arg)
 		if (disp_get_ump_secure_id)
 			return disp_get_ump_secure_id(info, arg);
 		else
-			return -EUNSUPPORTED;
+			return -ENOTSUPP;
 	}
 #endif
 
