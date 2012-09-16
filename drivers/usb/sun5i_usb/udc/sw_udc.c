@@ -837,7 +837,7 @@ static int sw_udc_get_status(struct sw_udc *dev, struct usb_ctrlrequest *crq)
 
 static int sw_udc_set_halt(struct usb_ep *_ep, int value);
 
-#if 0
+#if 1
 /*
 *******************************************************************************
 *                     sw_udc_handle_ep0_idle
@@ -891,6 +891,7 @@ static void sw_udc_handle_ep0_idle(struct sw_udc *dev,
 	dev->req_config     = 0;
 	dev->req_pending    = 1;
 
+    if(dev->req_std){   //standard request
 	switch (crq->bRequest) {
     	case USB_REQ_SET_CONFIGURATION:
     		DMSG_DBG_UDC("USB_REQ_SET_CONFIGURATION ... \n");
@@ -925,92 +926,113 @@ static void sw_udc_handle_ep0_idle(struct sw_udc *dev,
     			return;
     		}
 		break;
-/*
-    	case USB_REQ_GET_STATUS:
-    		DMSG_DBG_UDC("USB_REQ_GET_STATUS ... \n");
 
-    		sw_udc_clear_ep0_opr(base_addr);
+        	case USB_REQ_GET_STATUS:
+        		DMSG_DBG_UDC("USB_REQ_GET_STATUS ... \n");
 
-    		if (dev->req_std) {
-    			if (!sw_udc_get_status(dev, crq)) {
+     			if (!sw_udc_get_status(dev, crq)) {
     				return;
     			}
-    		}
-		break;
+    		break;
 
-    	case USB_REQ_CLEAR_FEATURE:
-    		sw_udc_clear_ep0_opr(base_addr);
+    		case USB_REQ_CLEAR_FEATURE:
+    			//--<1>--数据方向必须为 host to device
+    			if(x_test_bit(crq->bRequestType, 7)){
+    				DMSG_PANIC("USB_REQ_CLEAR_FEATURE: data is not host to device\n");
+    				break;
+    			}
 
-    		if (crq->bRequestType != USB_RECIP_ENDPOINT)
-    			break;
+    			USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 1);
 
-    		if (crq->wValue != USB_ENDPOINT_HALT || crq->wLength != 0)
-    			break;
+    			//--<3>--数据阶段
+    			if(crq->bRequestType == USB_RECIP_DEVICE){
+    				/* wValue 0-1 */
+    				if(crq->wValue){
+    					dev->devstatus &= ~(1 << USB_DEVICE_REMOTE_WAKEUP);
+    				}else{
+    					int k = 0;
+    					for(k = 0;k < SW_UDC_ENDPOINTS;k++){
+    						sw_udc_set_halt(&dev->ep[k].ep, 0);
+    					}
+    				}
 
-    		sw_udc_set_halt(&dev->ep[crq->wIndex & 0x7f].ep, 0);
-    		sw_udc_set_ep0_de_out(base_addr);
-		return;
+    			}else if(crq->bRequestType == USB_RECIP_INTERFACE){
+    				//--<2>--令牌阶段结束
 
-    	case USB_REQ_SET_FEATURE:
-    		sw_udc_clear_ep0_opr(base_addr);
+    				//不处理
 
-    		if (crq->bRequestType != USB_RECIP_ENDPOINT)
-    			break;
+    			}else if(crq->bRequestType == USB_RECIP_ENDPOINT){
+    				//--<3>--解除禁用ep
+    				//sw_udc_set_halt(&dev->ep[crq->wIndex & 0x7f].ep, 0);
+    				//dev->devstatus &= ~(1 << USB_DEVICE_REMOTE_WAKEUP);
+    				/* wValue 0-1 */
+    				if(crq->wValue){
+    					dev->devstatus &= ~(1 << USB_DEVICE_REMOTE_WAKEUP);
+    				}else{
+    					sw_udc_set_halt(&dev->ep[crq->wIndex & 0x7f].ep, 0);
+    				}
 
-    		if (crq->wValue != USB_ENDPOINT_HALT || crq->wLength != 0)
-    			break;
+    			}else{
+    				DMSG_PANIC("PANIC : nonsupport set feature request. (%d)\n", crq->bRequestType);
+    				USBC_Dev_EpSendStall(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0);
+    			}
 
-    		sw_udc_set_halt(&dev->ep[crq->wIndex & 0x7f].ep, 1);
-    		sw_udc_set_ep0_de_out(base_addr);
-		return;
-*/
+    			dev->ep0state = EP0_IDLE;
 
-        case USB_REQ_SET_FEATURE:
-            //--<1>--数据方向必须为 host to device
-            if(x_test_bit(crq->bRequestType, 7) == 1){
-                DMSG_PANIC("USB_REQ_CLEAR_FEATURE: data is not host to device\n");
-                break;
-            }
+    			return;
+    		//break;
 
-            //--<3>--数据阶段
-            if(crq->bRequestType == USB_RECIP_DEVICE){
-                if((crq->wValue == USB_DEVICE_TEST_MODE) && (crq->wIndex == 0x0400)){
-                    //setup packet包接收完毕
-                    USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 1);
-
-                    dev->ep0state = EP0_END_XFER;
-                    crq_bRequest = USB_REQ_SET_FEATURE;
-
-                    return;
+            case USB_REQ_SET_FEATURE:
+                //--<1>--数据方向必须为 host to device
+                if(x_test_bit(crq->bRequestType, 7)){
+                    DMSG_PANIC("USB_REQ_SET_FEATURE: data is not host to device\n");
+                    break;
                 }
-            }else if(crq->bRequestType == USB_RECIP_INTERFACE){
-                //--<2>--令牌阶段结束
+
+                //--<3>--数据阶段
+                if(crq->bRequestType == USB_RECIP_DEVICE){
+                    if((crq->wValue == USB_DEVICE_TEST_MODE) && (crq->wIndex == 0x0400)){
+                        //setup packet包接收完毕
+                        USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 1);
+
+                        dev->ep0state = EP0_END_XFER;
+                        crq_bRequest = USB_REQ_SET_FEATURE;
+
+                        return;
+                    }
+
+    				USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 1);
+    				dev->devstatus |= (1 << USB_DEVICE_REMOTE_WAKEUP);
+                }else if(crq->bRequestType == USB_RECIP_INTERFACE){
+                    //--<2>--令牌阶段结束
                 USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 0);
 
                 //不处理
 
-            }else if(crq->bRequestType == USB_RECIP_ENDPOINT){
-                //--<3>--禁用ep
-                USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 0);
+                }else if(crq->bRequestType == USB_RECIP_ENDPOINT){
+                    //--<3>--禁用ep
+                    USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 1);
+    				sw_udc_set_halt(&dev->ep[crq->wIndex & 0x7f].ep, 1);
+                }else{
+                    DMSG_PANIC("PANIC : nonsupport set feature request. (%d)\n", crq->bRequestType);
 
-            }else{
-                DMSG_PANIC("PANIC : nonsupport set feature request. (%d)\n", crq->bRequestType);
-
-                USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 0);
-                USBC_Dev_EpSendStall(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0);
+                    USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 1);
+                    USBC_Dev_EpSendStall(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0);
+                }
 
                 dev->ep0state = EP0_IDLE;
-            }
 
-            //--<4>--
-            dev->ep0state = EP0_IDLE;
-        break;
+    			return;
+            //break;
 
-    	default:
-			/* 只收setup数据包，不能置DataEnd */
-			USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 0);
-    		break;
-	}
+        	default:
+    			/* 只收setup数据包，不能置DataEnd */
+    			USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 0);
+        		break;
+    	}
+    }else{
+        USBC_Dev_ReadDataStatus(g_sw_udc_io.usb_bsp_hdle, USBC_EP_TYPE_EP0, 0);
+    }
 
 	if(crq->bRequestType & USB_DIR_IN){
 		dev->ep0state = EP0_IN_DATA_PHASE;

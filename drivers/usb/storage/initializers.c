@@ -111,6 +111,13 @@ int usb_stor_huawei_e220_init(struct us_data *us)
 
 }
 
+/* This places the HUAWEI E303 devices in multi-port mode */
+int usb_stor_huawei_e303_init(struct us_data *us)
+{
+	printk("====usb_stor_huawei_e303_init===>\n");
+	return -ENODEV;
+}
+
 //AC560--ZTE--	0x19d20026->0x19d20094	before convert to modem,don't report disk dev
 int usb_stor_ZTE_AC580_init(struct us_data *us) // PID = 0x0026
 {
@@ -131,6 +138,7 @@ int usb_stor_ZTE_AC580_init(struct us_data *us) // PID = 0x0026
 	printk("====AC580/AC560===>usb_stor_control_msg performing result is %d\n", result);
 	return (result ? 0 : -ENODEV);
 #else
+	printk("====%s===>\n",__FUNCTION__);
 	return -ENODEV;
 #endif
 }
@@ -138,16 +146,19 @@ int usb_stor_ZTE_AC580_init(struct us_data *us) // PID = 0x0026
 //AC560--ZTE--	0x19d20026->0x19d20094	before convert to modem,don't report disk dev
 int usb_stor_ZTE_AC580_init2(struct us_data *us) // PID = 0x0026
 {
+	printk("====%s===>\n",__FUNCTION__);
 	return -ENODEV;
 }
 
 int usb_stor_ASB_init(struct us_data *us)
 {
+	printk("====%s===>\n",__FUNCTION__);
 	return -ENODEV;
 }
 
 int usb_stor_TechFaith_init(struct us_data *us)
 {
+	printk("====%s===>\n",__FUNCTION__);
 	usb_stor_port_reset(us);
 	return -ENODEV;
 }
@@ -160,7 +171,6 @@ int usb_stor_Shichuangxing_init(struct us_data *us)
 
 int usb_stor_wangxun_init(struct us_data *us)
 {
-	
 	printk("====usb_stor_wangxun_init===>\n");
 	usb_stor_port_reset(us);	
 	return -ENODEV;

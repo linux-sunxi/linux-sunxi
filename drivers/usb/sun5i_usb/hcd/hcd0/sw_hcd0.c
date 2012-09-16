@@ -33,6 +33,9 @@
 #include <linux/io.h>
 
 #include  <mach/clock.h>
+
+#include "../../../../power/axp_power/axp-gpio.h"
+
 #include  "../include/sw_hcd_config.h"
 #include  "../include/sw_hcd_core.h"
 #include  "../include/sw_hcd_dma.h"
@@ -109,7 +112,7 @@ static void sw_hcd_save_context(struct sw_hcd *sw_hcd);
 static void sw_hcd_restore_context(struct sw_hcd *sw_hcd);
 
 
-#if 0
+#if 1
 static s32 usb_clock_init(sw_hcd_io_t *sw_hcd_io)
 {
 	sw_hcd_io->sie_clk = clk_get(NULL, "ahb_usb0");
@@ -118,7 +121,7 @@ static s32 usb_clock_init(sw_hcd_io_t *sw_hcd_io)
 		goto failed;
 	}
 
-	sw_hcd_io->phy_clk = clk_get(NULL, "usb_phy1");
+	sw_hcd_io->phy_clk = clk_get(NULL, "usb_phy");
 	if (IS_ERR(sw_hcd_io->phy_clk)){
 		DMSG_PANIC("ERR: get usb phy clk failed.\n");
 		goto failed;
@@ -199,7 +202,7 @@ static s32 open_usb_clock(sw_hcd_io_t *sw_hcd_io)
 
 	    clk_enable(sw_hcd_io->phy_clk);
 	    clk_enable(sw_hcd_io->phy0_clk);
-		clk_reset(sw_hcd_io->phy0_clk, 0);
+		  clk_reset(sw_hcd_io->phy0_clk, 0);
 		mdelay(10);
 
 		sw_hcd_io->clk_is_open = 1;
@@ -242,7 +245,7 @@ static s32 close_usb_clock(sw_hcd_io_t *sw_hcd_io)
  	DMSG_INFO_HCD0("close_usb_clock\n");
 
 	if(sw_hcd_io->sie_clk && sw_hcd_io->phy_clk && sw_hcd_io->phy0_clk && sw_hcd_io->clk_is_open){
-		clk_reset(sw_hcd_io->phy0_clk, 1);
+		  clk_reset(sw_hcd_io->phy0_clk, 1);
 	    clk_disable(sw_hcd_io->phy0_clk);
 	    clk_disable(sw_hcd_io->phy_clk);
 	    clk_disable(sw_hcd_io->sie_clk);
@@ -414,20 +417,37 @@ static __s32 pin_init(sw_hcd_io_t *sw_hcd_io)
 	ret = script_parser_fetch("usbc0", "usb_drv_vbus_gpio", (int *)&sw_hcd_io->drv_vbus_gpio_set, 64);
 	if(ret != 0){
 		DMSG_PANIC("ERR: get usbc0(drv vbus) id failed\n");
-		return -1;
 	}
 
-	sw_hcd_io->Drv_vbus_Handle = gpio_request(&sw_hcd_io->drv_vbus_gpio_set, 1);
-	if(sw_hcd_io->Drv_vbus_Handle == 0){
-		DMSG_PANIC("ERR: gpio_request failed\n");
-		return -1;
-	}
+    if(!sw_hcd_io->drv_vbus_gpio_set.port){
+		DMSG_PANIC("ERR: usbc0(drv vbus) is invalid\n");
+		sw_hcd_io->Drv_vbus_Handle = 0;
+		return 0;
+    }
 
-	/* set config, ouput */
-	gpio_set_one_pin_io_status(sw_hcd_io->Drv_vbus_Handle, 1, NULL);
+    if(sw_hcd_io->drv_vbus_gpio_set.port == 0xffff){    //power
+        if(sw_hcd_io->drv_vbus_gpio_set.mul_sel == 0 || sw_hcd_io->drv_vbus_gpio_set.mul_sel == 1){
+            axp_gpio_set_io(sw_hcd_io->drv_vbus_gpio_set.port_num, sw_hcd_io->drv_vbus_gpio_set.mul_sel);
+            axp_gpio_set_value(sw_hcd_io->drv_vbus_gpio_set.port_num, sw_hcd_io->drv_vbus_gpio_set.data);
 
-	/* reserved is pull down */
-	gpio_set_one_pin_pull(sw_hcd_io->Drv_vbus_Handle, 2, NULL);
+            return (100 + sw_hcd_io->drv_vbus_gpio_set.port_num);
+        }else{
+            DMSG_PANIC("ERR: unkown gpio mul_sel(%d)\n", sw_hcd_io->drv_vbus_gpio_set.mul_sel);
+            return 0;
+        }
+    }else{  //axp
+    	sw_hcd_io->Drv_vbus_Handle = gpio_request(&sw_hcd_io->drv_vbus_gpio_set, 1);
+    	if(sw_hcd_io->Drv_vbus_Handle == 0){
+    		DMSG_PANIC("ERR: gpio_request failed\n");
+    		return -1;
+    	}
+
+    	/* set config, ouput */
+    	gpio_set_one_pin_io_status(sw_hcd_io->Drv_vbus_Handle, 1, NULL);
+
+    	/* reserved is pull down */
+    	gpio_set_one_pin_pull(sw_hcd_io->Drv_vbus_Handle, 2, NULL);
+    }
 
 	return 0;
 }
@@ -452,8 +472,16 @@ static __s32 pin_init(sw_hcd_io_t *sw_hcd_io)
 */
 static __s32 pin_exit(sw_hcd_io_t *sw_hcd_io)
 {
-	gpio_release(sw_hcd_io->Drv_vbus_Handle, 0);
-	sw_hcd_io->Drv_vbus_Handle = 0;
+    if(sw_hcd_io->Drv_vbus_Handle){
+        if(sw_hcd_io->drv_vbus_gpio_set.port == 0xffff){    //power
+            axp_gpio_set_io(sw_hcd_io->drv_vbus_gpio_set.port_num, sw_hcd_io->drv_vbus_gpio_set.mul_sel);
+            axp_gpio_set_value(sw_hcd_io->drv_vbus_gpio_set.port_num, sw_hcd_io->drv_vbus_gpio_set.data);
+    	}else{
+            gpio_release(sw_hcd_io->Drv_vbus_Handle, 0);
+    	}
+    }
+
+    sw_hcd_io->Drv_vbus_Handle = 0;
 
 	return 0;
 }
@@ -480,6 +508,11 @@ static void sw_hcd_board_set_vbus(struct sw_hcd *sw_hcd, int is_on)
 {
     u32 on_off = 0;
 
+    if(sw_hcd->sw_hcd_io->Drv_vbus_Handle == 0){
+        printk("wrn: sw_hcd_io->drv_vbus_Handle is null\n");
+        return;
+    }
+
 	DMSG_INFO("[%s]: Set USB Power %s\n", sw_hcd->driver_name, (is_on ? "ON" : "OFF"));
 
     /* set power */
@@ -490,7 +523,11 @@ static void sw_hcd_board_set_vbus(struct sw_hcd *sw_hcd, int is_on)
     }
 
 	/* set gpio data */
-	gpio_write_one_pin_value(sw_hcd->sw_hcd_io->Drv_vbus_Handle, on_off, NULL);
+    if(sw_hcd->sw_hcd_io->drv_vbus_gpio_set.port == 0xffff){ //axp
+        axp_gpio_set_value(sw_hcd->sw_hcd_io->drv_vbus_gpio_set.port_num, on_off);
+    }else{  //gpio
+        gpio_write_one_pin_value(sw_hcd->sw_hcd_io->Drv_vbus_Handle, on_off, NULL);
+	}
 
 	if(is_on){
 		USBC_Host_StartSession(sw_hcd->sw_hcd_io->usb_bsp_hdle);

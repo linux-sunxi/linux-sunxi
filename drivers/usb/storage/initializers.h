@@ -55,3 +55,4 @@ int usb_stor_ASB_init(struct us_data *us);
 int usb_stor_TechFaith_init(struct us_data *us);
 int usb_stor_Shichuangxing_init(struct us_data *us);
 int usb_stor_wangxun_init(struct us_data *us);
+int usb_stor_huawei_e303_init(struct us_data *us);
