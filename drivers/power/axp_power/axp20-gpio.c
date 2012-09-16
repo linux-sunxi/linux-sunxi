@@ -82,7 +82,7 @@ int axp_gpio_get_io(int gpio, int *io_state)
 					return -EIO;
 				break;
 		case 2: axp_read(&axp->dev,AXP20_GPIO2_CFG,&val);val &= 0x07;
-				if(val == 0x0)
+				if(val < 0x02)
 					*io_state = 1;
 				else if (val == 0x02)
 					*io_state = 0;

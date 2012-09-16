@@ -180,7 +180,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				//.uV = ldo2_vol * 1000,
-				.enabled = 1,
+				//.enabled = 1,
 			}
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ldo2_data),
@@ -195,7 +195,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				//.uV = ldo3_vol * 1000,
-				.enabled = 1,
+				//.enabled = 1,
 			}
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ldo3_data),
@@ -211,7 +211,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				//.uV = ldo4_vol * 1000,
-				.enabled = 1,
+				//.enabled = 1,
 			}
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ldo4_data),
@@ -226,7 +226,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				//.uV = dcdc2_vol * 1000,
-				.enabled = 1,
+				//.enabled = 1,
 			}
 		},
 		.num_consumer_supplies = ARRAY_SIZE(buck2_data),
@@ -241,7 +241,7 @@ static struct regulator_init_data axp_regl_init_data[] = {
 			.initial_state = PM_SUSPEND_STANDBY,
 			.state_standby = {
 				//.uV = dcdc3_vol * 1000,
-				.enabled = 1,
+				//.enabled = 1,
 			}
 		},
 		.num_consumer_supplies = ARRAY_SIZE(buck3_data),
@@ -571,13 +571,13 @@ static int __init axp_board_init(void)
         if (ret)
         {
             printk("axp driver uning configuration failed(%d)\n", __LINE__);
-            pmu_usbcur_limit = 0;
+            pmu_usbcur_limit = 1;
         }
         ret = script_parser_fetch("pmu_para", "pmu_usbcur", &pmu_usbcur, sizeof(int));
         if (ret)
         {
             printk("axp driver uning configuration failed(%d)\n", __LINE__);
-            pmu_usbcur = 900;
+            pmu_usbcur = 0;
         }
         ret = script_parser_fetch("pmu_para", "pmu_pwroff_vol", &pmu_pwroff_vol, sizeof(int));
         if (ret)
@@ -671,6 +671,16 @@ static int __init axp_board_init(void)
         axp_regl_init_data[3].constraints.state_standby.uV = ldo4_vol * 1000;
         axp_regl_init_data[5].constraints.state_standby.uV = dcdc2_vol * 1000;
         axp_regl_init_data[6].constraints.state_standby.uV = dcdc3_vol * 1000;
+        axp_regl_init_data[1].constraints.state_standby.enabled = (ldo2_vol)?1:0;
+        axp_regl_init_data[1].constraints.state_standby.disabled = (ldo2_vol)?0:1;
+        axp_regl_init_data[2].constraints.state_standby.enabled = (ldo3_vol)?1:0;
+        axp_regl_init_data[2].constraints.state_standby.disabled = (ldo3_vol)?0:1;
+        axp_regl_init_data[3].constraints.state_standby.enabled = (ldo4_vol)?1:0;
+        axp_regl_init_data[3].constraints.state_standby.disabled = (ldo4_vol)?0:1;
+        axp_regl_init_data[5].constraints.state_standby.enabled = (dcdc2_vol)?1:0;
+        axp_regl_init_data[5].constraints.state_standby.disabled = (dcdc2_vol)?0:1;
+        axp_regl_init_data[6].constraints.state_standby.enabled = (dcdc3_vol)?1:0;
+        axp_regl_init_data[6].constraints.state_standby.disabled = (dcdc3_vol)?0:1;
         battery_data.voltage_max_design = pmu_init_chgvol;
         battery_data.voltage_min_design = pmu_pwroff_vol;
         battery_data.energy_full_design = pmu_battery_cap;

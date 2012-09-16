@@ -35,5 +35,20 @@ config AXP_CHARGEINIT
 config AXP_CHGCHANGE
 	bool "AXP charging current set when suspend\resume\shutdown"
 	default y
+	
+choice
+	prompt "AXP calculate type:"
+	default AW_AXP20_COU
+
+	config AW_AXP20_COU
+		bool "COULOMB"
+		---help---
+			AXP driver for coulomb
+	config AW_AXP20_OCV
+		bool "OCV"
+		---help---
+			AXP driver for ocv
+
+endchoice
 
 endif # !AW_AXP
