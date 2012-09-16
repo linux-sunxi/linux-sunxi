@@ -1454,6 +1454,72 @@ static int sd_done(struct scsi_cmnd *SCpnt)
 	return good_bytes;
 }
 
+
+static int sd_wait_for_device_ready(struct scsi_disk *sdkp)
+{
+	unsigned char cmd[10];
+	int retries = 0;
+	unsigned int the_result;
+	struct scsi_sense_hdr sshdr;
+	int sense_valid = 0;
+
+	do {
+	    if(sdkp->device){
+            if(!scsi_device_online(sdkp->device)){
+                printk("err: scsi device offline\n");
+                return -1;
+            }
+        }else{
+            printk("err: sdkp->device is null\n");
+            return -1;
+        }
+
+	    /* First time need not delay */
+		if(retries){
+		    msleep(1000);
+		}
+
+		cmd[0] = TEST_UNIT_READY;
+		memset((void *) &cmd[1], 0, 9);
+		memset(&sshdr, 0, sizeof(struct scsi_sense_hdr));
+
+		the_result = scsi_execute_req(sdkp->device, cmd,
+					      DMA_NONE, NULL, 0,
+					      &sshdr, SD_TIMEOUT,
+					      SD_MAX_RETRIES, NULL);
+
+		/*
+		 * If the drive has indicated to us that it
+		 * doesn't have any media in it, don't bother
+		 * with any more polling.
+		 */
+		if (media_not_present(sdkp, &sshdr)) {
+            /* modified by javen */
+            if(retries < 5){
+                printk("Wait for media ready, retries = %d\n", retries);
+                retries++;
+                continue;
+            }
+
+		    printk("wrn:%s media is not present\n", sdkp->device->vendor);
+
+			return -1;
+        }else{
+            sdkp->media_present = 1;
+            sdkp->device->changed = 0;
+        }
+
+		if (the_result)
+			sense_valid = scsi_sense_valid(&sshdr);
+		retries++;
+	} while (retries < 5 &&
+		 (!scsi_status_is_good(the_result) ||
+		  ((driver_byte(the_result) & DRIVER_SENSE) &&
+		  sense_valid && sshdr.sense_key == UNIT_ATTENTION)));
+
+    return 0;
+}
+
 /*
  * spinup disk - called only in sd_revalidate_disk()
  */
@@ -2521,6 +2587,8 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
 	sdkp->RCD = 0;
 	sdkp->ATO = 0;
 	sdkp->first_scan = 1;
+
+	sd_wait_for_device_ready(sdkp);
 
 	sd_revalidate_disk(gd);
 
