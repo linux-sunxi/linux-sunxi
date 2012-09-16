@@ -1,0 +1,153 @@
+config CSI_DEV_SEL_SUN5I
+	tristate
+
+config CSI0_SUN5I
+	tristate "CSI0 v4l2 driver for sun5i"
+	default m
+	depends on CSI_DEV_SEL_SUN5I&&I2C && VIDEO_DEV && VIDEO_V4L2
+	select VIDEOBUF_DMA_CONTIG
+
+
+config CSI_OV7670
+	tristate "OmniVision OV7670 sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the OmniVision
+	  OV7670 VGA camera.
+
+config CSI_GT2005
+	tristate "GalaxyCore GT2005 2M sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the GalaxyCore
+	  GT2005 2M camera.
+
+config CSI_GC0308
+	tristate "GalaxyCore GC0308 VGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the GalaxyCore
+	  GC0308 VGA camera.
+
+config CSI_HI704
+	tristate "HYNIX HI704 VGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Hynix
+	  HI704 VGA camera.
+
+config CSI_SP0838
+	tristate "Superpix SP0838 VGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Superpix
+	  SP0838 VGA camera.
+
+config CSI_MT9M112
+	tristate "Micron MT9M112 SXGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Micron
+	  MT9M112 SXGA camera.
+
+config CSI_MT9M113
+	tristate "Micron MT9M113 SXGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Micron
+	  MT9M113 SXGA camera.
+
+config CSI_OV2655
+	tristate "OmniVision OV2655 UXGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the MOmniVision
+	  OV2655 UXGA camera.
+
+config CSI_HI253
+	tristate "Hynix HI253 UXGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Hynix
+	  HI253 UXGA camera.
+
+config CSI_MT9D112
+	tristate "Micron MT9D112 UXGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the Micron
+	  MT9D112 UXGA camera.
+
+config CSI_GC0307
+	tristate "GalaxyCore GC0307 VGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the GalaxyCore
+	  GC0307 VGA camera.
+
+config CSI_OV5640
+	tristate "OmniVision OV5640 5M sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the OmniVision
+	  OV5640 5M camera.
+
+config CSI_GC2015
+	tristate "GalaxyCore GC2015 2M sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the GalaxyCore
+	  GC2015 2M camera.
+
+config CSI_OV2643
+	tristate "OmniVision OV2643 2M sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the OmniVision
+	  OV2643 2M camera.
+
+config CSI_GC0329
+	tristate "GalaxyCore GC0329 VGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the GalaxyCore
+	  GC0329 VGA camera.
+
+config CSI_GC0309
+	tristate "GalaxyCore GC0309 VGA sensor support"
+	default m
+	depends on I2C && VIDEO_V4L2
+	select	CSI_DEV_SEL_SUN5I
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the GalaxyCore
+	  GC0309 VGA camera.
