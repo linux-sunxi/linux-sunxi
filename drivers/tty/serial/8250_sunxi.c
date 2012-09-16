@@ -16,7 +16,6 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/init.h>
-
 #include <asm/io.h>
 #include <asm/ecard.h>
 #include <asm/string.h>
@@ -37,13 +36,17 @@
 
 static int sw_serial[MAX_PORTS];
 
+
+#if 0
 #define UART_MSG(fmt...)    printk("[uart]: "fmt)
+#else
+#define UART_MSG(fmt...)	do { } while (0)
+#endif
 /* Register base define */
 #define UART_BASE       (0x01C28000)
 #define UART_BASE_OS    (0x400)
 #define UARTx_BASE(x)   (UART_BASE + (x) * UART_BASE_OS)
 #define RESSIZE(res)    (((res)->end - (res)->start)+1)
-
 struct sw_serial_port {
     struct uart_port    port;
     char                name[16];
@@ -220,10 +223,53 @@ static int __devexit sw_serial_remove(struct platform_device *dev)
 	sport = NULL;
 	return 0;
 }
+static int sw_serial_suspend(struct platform_device *dev, pm_message_t state)
+{
+	int i;
+	struct uart_port *port;
+	UART_MSG("sw_serial_resume uart suspend\n");
+	UART_MSG("&dev->dev is 0x%x\n",&dev->dev);
+
+	for (i = 0; i < MAX_PORTS; i++) {
+		port=(struct uart_port *)get_ports(i);
+		if (port->type != PORT_UNKNOWN){
+		UART_MSG("type is 0x%x  PORT_UNKNOWN is 0x%x\n",port->type,PORT_UNKNOWN);
+		UART_MSG("port.dev is 0x%x  &dev->dev is 0x%x\n",port->dev,&dev->dev);
+		}
+
+		if ((port->type != PORT_UNKNOWN)&& (port->dev == &dev->dev))
+			serial8250_suspend_port(i);
+	}
+
+	return 0;
+}
+
+static int sw_serial_resume(struct platform_device *dev)
+{
+	struct uart_port *port;
+	int i;
+	UART_MSG("serial8250_resume SUPER_STANDBY resume\n");
+	UART_MSG("&dev->dev is 0x%x\n",&dev->dev);
+
+	for (i = 0; i < MAX_PORTS; i++) {
+		port=(struct uart_port *)get_ports(i);
+		if (port->type != PORT_UNKNOWN){
+		UART_MSG("type is 0x%x  PORT_UNKNOWN is 0x%x\n",port->type,PORT_UNKNOWN);
+		UART_MSG("port.dev is 0x%x  &dev->dev is 0x%x\n",port->dev,&dev->dev);
+		}
+		if ((port->type != PORT_UNKNOWN) && (port->dev == &dev->dev))
+			serial8250_resume_port(i);
+
+	}
+
+	return 0;
+}
 
 static struct platform_driver sw_serial_driver = {
-    .probe  = sw_serial_probe,
-    .remove = sw_serial_remove,
+    .probe  	= sw_serial_probe,
+    .remove 	= sw_serial_remove,
+	.suspend	= sw_serial_suspend,
+	.resume		= sw_serial_resume,
     .driver = {
         .name    = "sunxi-uart",
         .owner    = THIS_MODULE,
