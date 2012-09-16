@@ -225,7 +225,6 @@ static inline void aw_twi_disable_ack(void *base_addr)
 	unsigned int reg_val = readl(base_addr + TWI_CTL_REG);
 	reg_val &= ~TWI_CTL_ACK;
 	writel(reg_val, base_addr + TWI_CTL_REG);
-	return;
 }
 
 /* when sending ack or nack, it will send ack automatically */
@@ -467,6 +466,99 @@ static int aw_twi_stop(void *base_addr)
 	return AWXX_I2C_OK;
 }
 
+/* get SDA state */
+static unsigned int aw_twi_get_sda(void *base_addr)
+{
+    unsigned int status = 0;
+    status = TWI_LCR_SDA_STATE_MASK & readl(base_addr + TWI_LCR_REG);
+    status >>= 4;
+    return  (status&0x1);
+}
+
+/* set SCL level(high/low), only when SCL enable */
+static void aw_twi_set_scl(void *base_addr, unsigned int hi_lo)
+{
+    unsigned int reg_val = readl(base_addr + TWI_LCR_REG);
+    reg_val &= ~TWI_LCR_SCL_CTL;
+    hi_lo   &= 0x01;// mask
+    reg_val |= (hi_lo<<3);
+    writel(reg_val, base_addr + TWI_LCR_REG);
+}
+
+/* enable SDA or SCL */
+static void aw_twi_enable_LCR(void *base_addr, unsigned int sda_scl)
+{
+    unsigned int reg_val = readl(base_addr + TWI_LCR_REG);
+    sda_scl &= 0x01;// mask
+    if(sda_scl)
+    {
+        reg_val |= TWI_LCR_SCL_EN;//enable scl line control
+    }
+    else
+    {
+        reg_val |= TWI_LCR_SDA_EN;//enable sda line control
+    }
+    writel(reg_val, base_addr + TWI_LCR_REG);
+}
+
+/* disable SDA or SCL */
+static void aw_twi_disable_LCR(void *base_addr, unsigned int sda_scl)
+{
+    unsigned int reg_val = readl(base_addr + TWI_LCR_REG);
+    sda_scl &= 0x01;// mask
+    if(sda_scl)
+    {
+        reg_val &= ~TWI_LCR_SCL_EN;//disable scl line control
+    }
+    else
+    {
+        reg_val &= ~TWI_LCR_SDA_EN;//disable sda line control
+    }
+    writel(reg_val, base_addr + TWI_LCR_REG);
+}
+
+static int aw_twi_send_clk_9pulse(void *base_addr)
+{
+    int twi_scl = 1;
+    int low = 0;
+    int high = 1;
+    int i = 0;
+
+    /* enable scl control */
+    aw_twi_enable_LCR(base_addr, twi_scl);
+
+    while(i < 10)
+    {
+        if( aw_twi_get_sda(base_addr)
+            && aw_twi_get_sda(base_addr)
+            && aw_twi_get_sda(base_addr) )
+        {
+            break;
+        }
+        /* twi_scl -> low */
+        aw_twi_set_scl(base_addr, low);
+        udelay(1000);
+
+        /* twi_scl -> high */
+        aw_twi_set_scl(base_addr, high);
+        udelay(1000);
+        i++;
+    }
+
+    if(aw_twi_get_sda(base_addr))
+    {
+        i2c_dbg("SDA is HIGH level now,okay. \n");
+        aw_twi_disable_LCR(base_addr, twi_scl);//disable
+        return AWXX_I2C_OK;
+    }
+    else
+    {
+        i2c_dbg("SDA is still Stuck Low Error,failed. \n");
+        aw_twi_disable_LCR(base_addr, twi_scl);//disable
+        return AWXX_I2C_FAIL;
+    }
+}
+
 /*
 ****************************************************************************************************
 *
@@ -511,8 +603,6 @@ static void i2c_sunxi_addr_byte(struct sunxi_i2c *i2c)
 	}
 	//send 7bits+r/w or the first part of 10bits
 	aw_twi_put_byte(i2c->base_addr, &addr);
-
-	return;
 }
 
 
@@ -761,8 +851,15 @@ static int i2c_sunxi_do_xfer(struct sunxi_i2c *i2c, struct i2c_msg *msgs, int nu
 	       TWI_STAT_BUS_ERR != aw_twi_query_irq_status(i2c->base_addr) &&
 	       TWI_STAT_ARBLOST_SLAR_ACK != aw_twi_query_irq_status(i2c->base_addr) ) {
 		i2c_dbg("bus is busy, status = %x\n", aw_twi_query_irq_status(i2c->base_addr));
-		ret = AWXX_I2C_RETRY;
-		goto out;
+        if( AWXX_I2C_OK == aw_twi_send_clk_9pulse(i2c->base_addr) )
+        {
+            break;
+        }
+        else
+        {
+            ret = AWXX_I2C_RETRY;
+            goto out;
+        }
 	}
 	//i2c_dbg("bus num = %d\n", i2c->adap.nr);
 	//i2c_dbg("bus name = %s\n", i2c->adap.name);
@@ -851,7 +948,6 @@ static int i2c_sunxi_clk_init(struct sunxi_i2c *i2c)
 	aw_twi_set_clock(apb_clk, i2c->bus_freq, i2c->base_addr);
 
 	return 0;
-
 }
 
 static int i2c_sunxi_clk_exit(struct sunxi_i2c *i2c)
@@ -865,7 +961,6 @@ static int i2c_sunxi_clk_exit(struct sunxi_i2c *i2c)
 	aw_twi_disable_sys_clk(i2c);
 
 	return 0;
-
 }
 
 static int i2c_sunxi_hw_init(struct sunxi_i2c *i2c)
@@ -893,7 +988,6 @@ static void i2c_sunxi_hw_exit(struct sunxi_i2c *i2c)
 		return;
 	}
 	aw_twi_release_gpio(i2c);
-
 }
 
 static int i2c_sunxi_probe(struct platform_device *dev)
@@ -1074,19 +1168,23 @@ static int __exit i2c_sunxi_remove(struct platform_device *dev)
 static int i2c_sunxi_suspend(struct platform_device *pdev,  pm_message_t state)
 {
 	struct sunxi_i2c *i2c = platform_get_drvdata(pdev);
+	int i = 10;
 
 	i2c->suspend_flag = 1;
 
-	if(i2c->status != I2C_XFER_IDLE) {
-		i2c_dbg("[i2c-%d] suspend wihle xfer,dev addr = %x\n",
-			i2c->adap.nr, i2c->msg? i2c->msg->addr : 0xff);
-	}
-
+	/*
+	 * twi0 is for power, it will be accessed by axp driver
+	 * before twi resume, so, don't suspend twi0
+	 */
 	if(0 == i2c->bus_num) {
-		/* twi0 is for power, it will be accessed by axp driver
-		   before twi resume, so, don't suspend twi0            */
 		i2c->suspend_flag = 0;
 		return 0;
+	}
+
+	while((i2c->status != I2C_XFER_IDLE) && (i-- > 0)) {
+		i2c_dbg("[i2c-%d] suspend wihle xfer,dev addr = 0x%x\n",
+			i2c->adap.nr, i2c->msg? i2c->msg->addr : 0xff);
+		msleep(100);
 	}
 
 	if(i2c_sunxi_clk_exit(i2c)) {
