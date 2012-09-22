@@ -1989,6 +1989,19 @@ UNUSUAL_DEV(0x05c6,0x00a0,0x00,0x00,
 		USB_SC_DEVICE,USB_PR_DEVICE,usb_stor_ASB_init,
 		0),
 
+UNUSUAL_DEV(0x1bbb,0xf000,0x0,0x0,
+		"alcatel MOBILE",
+		"Mass Storage",
+		USB_SC_DEVICE,USB_PR_DEVICE,usb_stor_ASB_init,
+		0),
+
+//alcatel--don't report disk device
+UNUSUAL_DEV(0x1bbb,0x0017,0x0,0x0,
+		"alcatel MOBILE",
+		"Mass Storage",
+		USB_SC_DEVICE,USB_PR_DEVICE,usb_stor_ASB_init,
+		0),
+
 //TechFaith--don't report disk device
 UNUSUAL_DEV(0x1d09,0x1010,0x0,0x0,
 		"TechFaith MOBILE",
@@ -2021,6 +2034,13 @@ UNUSUAL_DEV(0x1e89,0xf000,0x0,0x0,
 		"Shichuangxing MOBILE",
 		"Mass Storage",
 		USB_SC_DEVICE,USB_PR_DEVICE,usb_stor_Shichuangxing_init,
+		0),
+
+//TechFaith--don't report disk device
+UNUSUAL_DEV(0x12d1,0x1f01,0x102,0x102,
+		"Huawei MOBILE:E303",
+		"Mass Storage",
+		USB_SC_DEVICE,USB_PR_DEVICE,usb_stor_huawei_e303_init,
 		0),
 
 /* Reported by Vilius Bilinkevicius <vilisas AT xxx DOT lt) */

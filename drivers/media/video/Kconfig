@@ -1091,8 +1091,17 @@ endif
 menuconfig VIDEO_CSI_SUN4I
 	bool "CSI Driver Config for sun4i"
 	default m
-	depends on VIDEO_DEV && VIDEO_V4L2
+	depends on ARCH_SUN4I && VIDEO_DEV && VIDEO_V4L2
 
 if VIDEO_CSI_SUN4I
 source "drivers/media/video/sun4i_csi/Kconfig"	   	  
+endif
+
+menuconfig VIDEO_CSI_SUN5I
+	bool "CSI Driver Config for sun5i"
+	default m
+	depends on ARCH_SUN5I && VIDEO_DEV && VIDEO_V4L2
+
+if VIDEO_CSI_SUN5I
+source "drivers/media/video/sun5i_csi/Kconfig"
 endif

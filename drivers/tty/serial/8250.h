@@ -77,3 +77,4 @@ struct serial8250_config {
 #else
 #define ALPHA_KLUDGE_MCR 0
 #endif
+extern int * get_ports(int number);

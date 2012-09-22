@@ -737,11 +737,23 @@ config  TOUCHSCREEN_GT801
        depends on I2C
        help
           GT801 touchscreen driver
+          
+config  TOUCHSCREEN_GT818
+       tristate  "dpt microelctronics gt818 touchscreen driver"
+       depends on I2C
+       help
+          GT801 touchscreen driver
+          
 config  TOUCHSCREEN_SUN4I_TS
        tristate  "sun4i-ts touchscreen driver"
        help
            sun4i-ts touchscreen driver
 
+config  TOUCHSCREEN_SW_TS
+       tristate  "softwinnner (sw-ts) touchscreen driver"
+       help
+           sw-ts touchscreen driver
+           
 config TOUCHSCREEN_FT5X_TS
        tristate  "ft5x touchscreen driver"
        help

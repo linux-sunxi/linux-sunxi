@@ -382,7 +382,6 @@ static int alarm_suspend(struct platform_device *pdev, pm_message_t state)
 	struct alarm_queue *tmp_queue = NULL;
 
 	pr_alarm(SUSPEND, "alarm_suspend(%p, %d)\n", pdev, state.event);
-
 	spin_lock_irqsave(&alarm_slock, flags);
 	suspended = true;
 	spin_unlock_irqrestore(&alarm_slock, flags);
@@ -424,6 +423,8 @@ static int alarm_suspend(struct platform_device *pdev, pm_message_t state)
 			pr_alarm(SUSPEND, "alarm about to go off\n");
 			memset(&rtc_alarm, 0, sizeof(rtc_alarm));
 			rtc_alarm.enabled = 0;
+			rtc_alarm.time.tm_year = 110;
+			rtc_alarm.time.tm_mday = 1;
 			rtc_set_alarm(alarm_rtc_dev, &rtc_alarm);
 
 			spin_lock_irqsave(&alarm_slock, flags);
@@ -446,9 +447,10 @@ static int alarm_resume(struct platform_device *pdev)
 	unsigned long       flags;
 
 	pr_alarm(SUSPEND, "alarm_resume(%p)\n", pdev);
-
 	memset(&alarm, 0, sizeof(alarm));
 	alarm.enabled = 0;
+	alarm.time.tm_year = 110;
+	alarm.time.tm_mday = 1;
 	rtc_set_alarm(alarm_rtc_dev, &alarm);
 
 	spin_lock_irqsave(&alarm_slock, flags);
@@ -459,6 +461,12 @@ static int alarm_resume(struct platform_device *pdev)
 	spin_unlock_irqrestore(&alarm_slock, flags);
 
 	return 0;
+}
+
+static int alarm_shutdown(struct platform_device *pdev)
+{
+    rtc_alarm_shutdown(alarm_rtc_dev);
+    return 0;
 }
 
 static struct rtc_task alarm_rtc_task = {
@@ -520,6 +528,7 @@ static struct class_interface rtc_alarm_interface = {
 static struct platform_driver alarm_driver = {
 	.suspend = alarm_suspend,
 	.resume = alarm_resume,
+	.shutdown = alarm_shutdown,
 	.driver = {
 		.name = "alarm"
 	}
