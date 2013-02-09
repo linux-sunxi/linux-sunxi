@@ -1281,6 +1281,9 @@ Fb_blank(int blank_mode, struct fb_info *info)
 
 	__inf("Fb_blank,mode:%d\n", blank_mode);
 
+	if (blank_mode != FB_BLANK_POWERDOWN)
+		BSP_disp_clk_on(7);
+
 	for (sel = 0; sel < 2; sel++) {
 		if (((sel == 0) &&
 		     (g_fbi.fb_mode[info->node] != FB_MODE_SCREEN1)) ||
@@ -1288,7 +1291,7 @@ Fb_blank(int blank_mode, struct fb_info *info)
 		     (g_fbi.fb_mode[info->node] != FB_MODE_SCREEN0))) {
 			__s32 layer_hdl = g_fbi.layer_hdl[info->node][sel];
 
-			if (blank_mode == FB_BLANK_POWERDOWN)
+			if (blank_mode != FB_BLANK_UNBLANK)
 				BSP_disp_layer_close(sel, layer_hdl);
 			else
 				BSP_disp_layer_open(sel, layer_hdl);
@@ -1296,6 +1299,9 @@ Fb_blank(int blank_mode, struct fb_info *info)
 			//DRV_disp_wait_cmd_finish(sel);
 		}
 	}
+	if (blank_mode == FB_BLANK_POWERDOWN)
+			BSP_disp_clk_off(7);
+
 	return 0;
 }
 
