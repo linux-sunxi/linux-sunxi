@@ -1640,6 +1640,7 @@ void hdmi_edid_received(unsigned char *edid, int block_count)
 	struct fb_event event;
 	__u32 sel = 0;
 	__u32 block = 0;
+	LIST_HEAD(old_modelist);
 
 	mutex_lock(&g_fbi_mutex);
 	for (sel = 0; sel < 2; sel++) {
@@ -1683,7 +1684,7 @@ void hdmi_edid_received(unsigned char *edid, int block_count)
 			continue;
 		}
 
-		fb_destroy_modelist(&fbi->modelist);
+		list_splice(&fbi->modelist, &old_modelist);
 
 		fb_videomode_to_modelist(fbi->monspecs.modedb,
 					 fbi->monspecs.modedb_len,
@@ -1695,6 +1696,8 @@ void hdmi_edid_received(unsigned char *edid, int block_count)
 		 */
 		event.info = fbi;
 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
+
+		fb_destroy_modelist(&old_modelist);
 
 		if (g_fbi.fb_registered[sel]) {
 			console_unlock();
