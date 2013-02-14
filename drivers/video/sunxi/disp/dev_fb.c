@@ -1285,6 +1285,9 @@ Fb_blank(int blank_mode, struct fb_info *info)
 
 	__inf("Fb_blank,mode:%d\n", blank_mode);
 
+	if (blank_mode != FB_BLANK_POWERDOWN)
+		BSP_disp_clk_on(7);
+
 	for (sel = 0; sel < 2; sel++) {
 		if (((sel == 0) &&
 		     (g_fbi.fb_mode[info->node] != FB_MODE_SCREEN1)) ||
@@ -1292,7 +1295,7 @@ Fb_blank(int blank_mode, struct fb_info *info)
 		     (g_fbi.fb_mode[info->node] != FB_MODE_SCREEN0))) {
 			__s32 layer_hdl = g_fbi.layer_hdl[info->node][sel];
 
-			if (blank_mode == FB_BLANK_POWERDOWN)
+			if (blank_mode != FB_BLANK_UNBLANK)
 				BSP_disp_layer_close(sel, layer_hdl);
 			else
 				BSP_disp_layer_open(sel, layer_hdl);
@@ -1300,6 +1303,9 @@ Fb_blank(int blank_mode, struct fb_info *info)
 			//DRV_disp_wait_cmd_finish(sel);
 		}
 	}
+	if (blank_mode == FB_BLANK_POWERDOWN)
+			BSP_disp_clk_off(7);
+
 	return 0;
 }
 
@@ -1633,10 +1639,12 @@ __s32 Display_set_fb_timing(__u32 sel)
 	return 0;
 }
 
-void hdmi_edid_received(unsigned char *edid, int block)
+void hdmi_edid_received(unsigned char *edid, int block_count)
 {
 	struct fb_event event;
 	__u32 sel = 0;
+	__u32 block = 0;
+	LIST_HEAD(old_modelist);
 
 	mutex_lock(&g_fbi_mutex);
 	for (sel = 0; sel < 2; sel++) {
@@ -1653,15 +1661,17 @@ void hdmi_edid_received(unsigned char *edid, int block)
 			console_lock();
 		}
 
-		if (block == 0) {
-			if (fbi->monspecs.modedb != NULL) {
-				fb_destroy_modedb(fbi->monspecs.modedb);
-				fbi->monspecs.modedb = NULL;
-			}
+		for (block = 0; block < block_count; block++) {
+			if (block == 0) {
+				if (fbi->monspecs.modedb != NULL) {
+					fb_destroy_modedb(fbi->monspecs.modedb);
+					fbi->monspecs.modedb = NULL;
+				}
 
-			fb_edid_to_monspecs(edid, &fbi->monspecs);
-		} else {
-			fb_edid_add_monspecs(edid, &fbi->monspecs);
+				fb_edid_to_monspecs(edid, &fbi->monspecs);
+			} else {
+				fb_edid_add_monspecs(edid + 0x80 * block, &fbi->monspecs);
+			}
 		}
 
 		if (fbi->monspecs.modedb_len == 0) {
@@ -1678,11 +1688,7 @@ void hdmi_edid_received(unsigned char *edid, int block)
 			continue;
 		}
 
-		if (fbi->modelist.prev && fbi->modelist.next &&
-		    !list_empty(&fbi->modelist)) {
-			/* Non-empty modelist, destroy before overwriting. */
-			fb_destroy_modelist(&fbi->modelist);
-		}
+		list_splice(&fbi->modelist, &old_modelist);
 
 		fb_videomode_to_modelist(fbi->monspecs.modedb,
 					 fbi->monspecs.modedb_len,
@@ -1694,6 +1700,8 @@ void hdmi_edid_received(unsigned char *edid, int block)
 		 */
 		event.info = fbi;
 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
+
+		fb_destroy_modelist(&old_modelist);
 
 		if (g_fbi.fb_registered[sel]) {
 			console_unlock();
@@ -1731,6 +1739,7 @@ __s32 Fb_Init(__u32 from)
 
 		for (i = 0; i < SUNXI_MAX_FB; i++) {
 			g_fbi.fbinfo[i] = framebuffer_alloc(0, g_fbi.dev);
+			INIT_LIST_HEAD(&g_fbi.fbinfo[i]->modelist);
 			g_fbi.fbinfo[i]->fbops = &dispfb_ops;
 			g_fbi.fbinfo[i]->flags = 0;
 			g_fbi.fbinfo[i]->device = g_fbi.dev;

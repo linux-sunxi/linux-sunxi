@@ -454,15 +454,61 @@ Parse_HDMI_VSDB(__u8 *pbuf, __u8 size)
 	return 0;
 }
 
+
+static __s32 ParseEDID_CEA861_extension_block(__u32 i)
+{
+	__u32 offset;
+
+	if (EDID_Buf[0x80 * i + 3] & 0x40) {
+		audio_info.supported_rates |=
+			SNDRV_PCM_RATE_32000 |
+			SNDRV_PCM_RATE_44100 |
+			SNDRV_PCM_RATE_48000;
+	}
+	offset = EDID_Buf[0x80 * i + 2];
+	/* deal with reserved data block */
+	if (offset > 4)	{
+		__u8 bsum = 4;
+		while (bsum < offset) {
+			__u8 tag = EDID_Buf[0x80 * i + bsum] >> 5;
+			__u8 len = EDID_Buf[0x80 * i + bsum] & 0x1f;
+			if ((len > 0) && ((bsum + len + 1) > offset)) {
+				pr_info("len or bsum size error\n");
+				return 0;
+			} else {
+				if (tag == 1) { /* ADB */
+					Parse_AudioData_Block(EDID_Buf + 0x80 * i + bsum + 1, len);
+				} else if (tag == 2) { /* VDB */
+					Parse_VideoData_Block(EDID_Buf + 0x80 * i + bsum + 1, len);
+				} else if (tag == 3) { /* vendor specific */
+					Parse_HDMI_VSDB(EDID_Buf + 0x80 * i + bsum + 1, len);
+				}
+			}
+
+			bsum += (len + 1);
+		}
+	} else {
+		pr_info("no data in block%d\n", i);
+	}
+
+	if (offset >= 4) { /* deal with 18-byte timing block */
+		while (offset < (0x80 - 18)) {
+			Parse_DTD_Block(EDID_Buf + 0x80 * i + offset);
+			offset += 18;
+		}
+	} else {
+		pr_info("no DTD in block%d\n", i);
+	}
+	return 1;
+}
+
 /*
  * collect the EDID ucdata of segment 0
- *
- * Yergh. Break this up! --libv.
  */
 __s32 ParseEDID(void)
 {
 	__u8 BlockCount;
-	__u32 i, offset;
+	__u32 i;
 
 	pr_info("ParseEDID\n");
 
@@ -483,8 +529,6 @@ __s32 ParseEDID(void)
 	if (EDID_CheckSum(0, EDID_Buf) != 0)
 		return 0;
 
-	hdmi_edid_received(EDID_Buf, 0);
-
 	if (EDID_Header_Check(EDID_Buf) != 0)
 		return 0;
 
@@ -495,66 +539,27 @@ __s32 ParseEDID(void)
 
 	Parse_DTD_Block(EDID_Buf + 0x48);
 
-	BlockCount = EDID_Buf[0x7E];
+	BlockCount = EDID_Buf[0x7E] + 1;
 
-	if (BlockCount > 0) {
-		if (BlockCount > 4)
-			BlockCount = 4;
-
-		for (i = 1; i <= BlockCount; i++) {
+	if (BlockCount > 1) {
+		if (BlockCount > 5)
+			BlockCount = 5;
+		for (i = 1; i < BlockCount; i++) {
 			GetEDIDData(i, EDID_Buf);
-
 			if (EDID_CheckSum(i, EDID_Buf) != 0)
-				return 0;
+				BlockCount = i;
+		}
+	}
 
-			hdmi_edid_received(EDID_Buf+(0x80*i), i);
+	hdmi_edid_received(EDID_Buf, BlockCount);
 
-			if (EDID_Buf[0x80 * i + 0] == 2) {
-				if (EDID_Buf[0x80 * i + 3] & 0x40) {
-					audio_info.supported_rates |=
-						SNDRV_PCM_RATE_32000 |
-						SNDRV_PCM_RATE_44100 |
-						SNDRV_PCM_RATE_48000;
-				}
-				offset = EDID_Buf[0x80 * i + 2];
-				/* deal with reserved data block */
-				if (offset > 4)	{
-					__u8 bsum = 4;
-					while (bsum < offset) {
-						__u8 tag = EDID_Buf[0x80 * i + bsum] >> 5;
-						__u8 len = EDID_Buf[0x80 * i + bsum] & 0x1f;
-						if ((len > 0) && ((bsum + len + 1) > offset)) {
-							pr_info("len or bsum size error\n");
-							return 0;
-						} else {
-							if (tag == 1) { /* ADB */
-								Parse_AudioData_Block(EDID_Buf + 0x80 * i + bsum + 1, len);
-							} else if (tag == 2) { /* VDB */
-								Parse_VideoData_Block(EDID_Buf + 0x80 * i + bsum + 1, len);
-							} else if (tag == 3) { /* vendor specific */
-								Parse_HDMI_VSDB(EDID_Buf + 0x80 * i + bsum + 1, len);
-							}
-						}
-
-						bsum += (len + 1);
-					}
-				} else {
-					pr_info("no data in block%d\n", i);
-				}
-
-				if (offset >= 4) { /* deal with 18-byte timing block */
-					while (offset < (0x80 - 18)) {
-						Parse_DTD_Block(EDID_Buf + 0x80 * i + offset);
-						offset += 18;
-					}
-				} else {
-					pr_info("no DTD in block%d\n", i);
-				}
-			}
-
+	if (BlockCount > 1) {
+		for (i = 1; i < BlockCount; i++) {
+			if (EDID_Buf[0x80 * i + 0] == 2)
+				if (! ParseEDID_CEA861_extension_block(i))
+					return 0;
 		}
 	}
 
 	return 0;
-
 }
