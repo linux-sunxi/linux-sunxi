@@ -122,6 +122,12 @@ config MTD_NAND_OMAP2
           Support for NAND flash on Texas Instruments OMAP2, OMAP3 and OMAP4
 	  platforms.
 
+config MTD_NAND_SUNXI
+	tristate "NAND Flash device on Allwinner A10"
+	depends on ARCH_SUN4I
+	help
+          Support for NAND flash on Allwinner A10
+
 config MTD_NAND_RICOH
 	tristate "Ricoh xD card reader"
 	default n
