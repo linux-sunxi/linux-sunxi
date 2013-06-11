@@ -234,7 +234,7 @@ static struct platform_device sun4i_ramconsole = {
 #endif
 
 /* ahci */
-
+#ifdef CONFIG_ARCH_SUN4I
 static int sunxi_ahci_phy_init(u32 base)
 {
 	u32 value;
@@ -422,6 +422,195 @@ struct platform_device sunxi_ahci_device = {
 		.coherent_dma_mask	= DMA_32BIT_MASK,
 	},
 };
+#endif
+
+static struct resource sunxi_uart0_resource[] = {
+    {
+        .start = SW_PA_UART0_IO_BASE,      
+        .end   = SW_PA_UART0_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART0, 
+        .end   = SW_INT_IRQNO_UART0,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+static struct resource sunxi_uart1_resource[] = {
+    {
+        .start = SW_PA_UART1_IO_BASE,      
+        .end   = SW_PA_UART1_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART1, 
+        .end   = SW_INT_IRQNO_UART1,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+static struct resource sunxi_uart2_resource[] = {
+    {
+        .start = SW_PA_UART2_IO_BASE,      
+        .end   = SW_PA_UART2_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART2, 
+        .end   = SW_INT_IRQNO_UART2,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+static struct resource sunxi_uart3_resource[] = {
+    {
+        .start = SW_PA_UART3_IO_BASE,      
+        .end   = SW_PA_UART3_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART3, 
+        .end   = SW_INT_IRQNO_UART3,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+#ifdef CONFIG_ARCH_SUN4I
+static struct resource sunxi_uart4_resource[] = {
+    {
+        .start = SW_PA_UART4_IO_BASE,      
+        .end   = SW_PA_UART4_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART4, 
+        .end   = SW_INT_IRQNO_UART4,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+static struct resource sunxi_uart5_resource[] = {
+    {
+        .start = SW_PA_UART5_IO_BASE,      
+        .end   = SW_PA_UART5_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART5, 
+        .end   = SW_INT_IRQNO_UART5,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+static struct resource sunxi_uart6_resource[] = {
+    {
+        .start = SW_PA_UART6_IO_BASE,      
+        .end   = SW_PA_UART6_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART6, 
+        .end   = SW_INT_IRQNO_UART6,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+
+static struct resource sunxi_uart7_resource[] = {
+    {
+        .start = SW_PA_UART7_IO_BASE,      
+        .end   = SW_PA_UART7_IO_BASE + 0x3ff, 
+        .flags = IORESOURCE_MEM
+    },
+    {
+        .start = SW_INT_IRQNO_UART7, 
+        .end   = SW_INT_IRQNO_UART7,           
+        .flags = IORESOURCE_IRQ
+    }, 
+};
+#endif
+
+struct platform_device sunxi_uart0_device = {
+    .name           = "sunxi-uart", 
+    .id             = 0, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart0_resource), 
+    .resource       = sunxi_uart0_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+struct platform_device sunxi_uart1_device = {
+    .name           = "sunxi-uart", 
+    .id             = 1, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart1_resource), 
+    .resource       = sunxi_uart1_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+struct platform_device sunxi_uart2_device = {
+    .name           = "sunxi-uart", 
+    .id             = 2, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart2_resource), 
+    .resource       = sunxi_uart2_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+struct platform_device sunxi_uart3_device = {
+    .name           = "sunxi-uart", 
+    .id             = 3, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart3_resource), 
+    .resource       = sunxi_uart3_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+#ifdef CONFIG_ARCH_SUN4I
+struct platform_device sunxi_uart4_device = {
+    .name           = "sunxi-uart", 
+    .id             = 4, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart4_resource), 
+    .resource       = sunxi_uart4_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+struct platform_device sunxi_uart5_device = {
+    .name           = "sunxi-uart", 
+    .id             = 5, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart5_resource), 
+    .resource       = sunxi_uart5_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+struct platform_device sunxi_uart6_device = {
+    .name           = "sunxi-uart", 
+    .id             = 6, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart6_resource), 
+    .resource       = sunxi_uart6_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
+struct platform_device sunxi_uart7_device = {
+    .name           = "sunxi-uart", 
+    .id             = 7, 
+    .num_resources  = ARRAY_SIZE(sunxi_uart7_resource), 
+    .resource       = sunxi_uart7_resource,     
+	.dev            = {
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+#endif
 
 static struct platform_device *sw_pdevs[] __initdata = {
 #if 0
@@ -429,11 +618,23 @@ static struct platform_device *sw_pdevs[] __initdata = {
 #endif
 	&sw_pdev_dmac,
 	&sw_pdev_nand,
+	&sunxi_uart0_device,
+	&sunxi_uart1_device,
+	&sunxi_uart2_device,
+	&sunxi_uart3_device,
+#ifdef CONFIG_ARCH_SUN4I
+	&sunxi_uart4_device,
+	&sunxi_uart5_device,
+	&sunxi_uart6_device,
+	&sunxi_uart7_device,
+#endif
 	&sunxi_twi0_device,
 	&sunxi_twi1_device,
 	&sunxi_twi2_device,
 	&sunxi_pmu_device,
+#ifdef CONFIG_ARCH_SUN4I
 	&sunxi_ahci_device,
+#endif
 #if defined(CONFIG_MALI_DRM) || defined(CONFIG_MALI_DRM_MODULE)
 	&sunxi_device_mali_drm,
 #endif
