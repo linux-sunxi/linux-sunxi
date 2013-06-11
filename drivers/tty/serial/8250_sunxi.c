@@ -27,24 +27,10 @@
 #include <mach/irqs.h>
 
 #include "8250.h"
-#if defined(CONFIG_ARCH_SUN4I)
-#define MAX_PORTS	    8
-#elif defined(CONFIG_ARCH_SUN5I)
-#define MAX_PORTS	    4
-#else
-#error "Unknown chip ID for Serial"
-#endif
-
-#define UART_MSG(fmt...)    printk("[uart]: "fmt)
-/* Register base define */
-#define UART_BASE       (0x01C28000)
-#define UART_BASE_OS    (0x400)
-#define UARTx_BASE(x)   (UART_BASE + (x) * UART_BASE_OS)
-#define RESSIZE(res)    (((res)->end - (res)->start)+1)
 
 struct sw_serial_port {
     int                 port_no;
-	int line;
+	int 				line;
     u32                 pio_hdle;
     struct clk          *clk;
     u32                 sclk;
@@ -53,24 +39,12 @@ struct sw_serial_port {
     struct platform_device* pdev;
 };
 
-//static void sw_serial_print_reg(struct sw_serial_port *sport)
-//{
-//    int i;
-//    
-//    for (i=0; i<32; i+=4)
-//    {
-//        if (!(i&0xf))
-//            eayly_printk("\n0x%08x : ", i);
-//        eayly_printk("%08x ", readl(sport->port.membase + i));
-//    }
-//}
-
 static int sw_serial_get_resource(struct sw_serial_port *sport)
 {
     char name[16];
     struct clk *pclk = NULL;
     char uart_para[16];
-    int ret;
+    int ret, used = 0;
     
     /* get register base */
     sport->mmres = platform_get_resource(sport->pdev, IORESOURCE_MEM, 0);
@@ -105,10 +79,14 @@ static int sw_serial_get_resource(struct sw_serial_port *sport)
     
     /* get gpio resource */
     sprintf(uart_para, "uart_para%d", sport->port_no);
-    sport->pio_hdle = gpio_request_ex(uart_para, NULL);
-    if (!sport->pio_hdle) {
-        ret = -EINVAL;
-        goto free_pclk;
+    if (!script_parser_fetch(uart_para, "uart_used", &used, sizeof(int))) {
+        if (used) {
+    		sport->pio_hdle = gpio_request_ex(uart_para, NULL);
+    		if (!sport->pio_hdle) {
+        		ret = -EINVAL;
+        		goto free_pclk;
+            }
+        }    
     }
     return 0;
 
@@ -123,7 +101,8 @@ static int sw_serial_put_resource(struct sw_serial_port *sport)
 {
     clk_disable(sport->clk);
     clk_put(sport->clk);
-    gpio_release(sport->pio_hdle, 1);
+    if (sport->pio_hdle)
+    	gpio_release(sport->pio_hdle, 1);
     return 0;
 }
 
@@ -143,12 +122,13 @@ static int __devinit
 sw_serial_probe(struct platform_device *dev)
 {
     struct sw_serial_port *sport;
-	struct uart_port port = {};
-	int ret;
-    
-	sport = kzalloc(sizeof(struct sw_serial_port), GFP_KERNEL);
-	if (!sport)
-		return -ENOMEM;
+    struct uart_port port = {};
+    int ret;
+
+    sport = kzalloc(sizeof(struct sw_serial_port), GFP_KERNEL);
+    if (!sport)
+        return -ENOMEM;
+
     sport->port_no  = dev->id;
     sport->pdev     = dev;
     
@@ -188,7 +168,6 @@ static int __devexit sw_serial_remove(struct platform_device *dev)
 {
     struct sw_serial_port *sport = platform_get_drvdata(dev);
 	
-	UART_MSG("serial remove\n");
 	serial8250_unregister_port(sport->line);
 	sw_serial_put_resource(sport);
 	
@@ -207,137 +186,14 @@ static struct platform_driver sw_serial_driver = {
     },
 };
 
-static struct resource sw_uart_res[8][2] = {
-    {/* uart0 resource */
-        {.start = UARTx_BASE(0),      .end = UARTx_BASE(0) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART0, .end = SW_INT_IRQNO_UART0,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart1 resource */
-        {.start = UARTx_BASE(1),      .end = UARTx_BASE(1) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART1, .end = SW_INT_IRQNO_UART1,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart2 resource */
-        {.start = UARTx_BASE(2),      .end = UARTx_BASE(2) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART2, .end = SW_INT_IRQNO_UART2,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart3 resource */
-        {.start = UARTx_BASE(3),      .end = UARTx_BASE(3) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART3, .end = SW_INT_IRQNO_UART3,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart4 resource */
-        {.start = UARTx_BASE(4),      .end = UARTx_BASE(4) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART4, .end = SW_INT_IRQNO_UART4,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart5 resource */
-        {.start = UARTx_BASE(5),      .end = UARTx_BASE(5) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART5, .end = SW_INT_IRQNO_UART5,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart6 resource */
-        {.start = UARTx_BASE(6),      .end = UARTx_BASE(6) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART6, .end = SW_INT_IRQNO_UART6,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-    {/* uart7 resource */
-        {.start = UARTx_BASE(7),      .end = UARTx_BASE(7) + UART_BASE_OS - 1, .flags = IORESOURCE_MEM}, /*base*/
-        {.start = SW_INT_IRQNO_UART7, .end = SW_INT_IRQNO_UART7,           .flags = IORESOURCE_IRQ}, /*irq */
-    },
-};
-
-void
-sw_serial_device_release(struct device *dev)
-{
-	/* FILL ME! */
-}
-
-static struct platform_device sw_uart_dev[] = {
-	[0] = {.name = "sunxi-uart", .id = 0,
-			.num_resources = ARRAY_SIZE(sw_uart_res[0]),
-			.resource = &sw_uart_res[0][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-	[1] = {.name = "sunxi-uart", .id = 1,
-			.num_resources = ARRAY_SIZE(sw_uart_res[1]),
-			.resource = &sw_uart_res[1][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-	[2] = {.name = "sunxi-uart", .id = 2,
-			.num_resources = ARRAY_SIZE(sw_uart_res[2]),
-			.resource = &sw_uart_res[2][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-	[3] = {.name = "sunxi-uart", .id = 3,
-			.num_resources = ARRAY_SIZE(sw_uart_res[3]),
-			.resource = &sw_uart_res[3][0], .dev = {
-			.release = &sw_serial_device_release
-			}
-	},
-	[4] = {.name = "sunxi-uart", .id = 4,
-			.num_resources = ARRAY_SIZE(sw_uart_res[4]),
-			.resource = &sw_uart_res[4][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-	[5] = {.name = "sunxi-uart", .id = 5,
-			.num_resources = ARRAY_SIZE(sw_uart_res[5]),
-			.resource = &sw_uart_res[5][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-	[6] = {.name = "sunxi-uart", .id = 6,
-			.num_resources = ARRAY_SIZE(sw_uart_res[6]),
-			.resource = &sw_uart_res[6][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-	[7] = {.name = "sunxi-uart", .id = 7,
-			.num_resources = ARRAY_SIZE(sw_uart_res[7]),
-			.resource = &sw_uart_res[7][0], .dev = {
-					.release = &sw_serial_device_release
-			}
-	},
-};
-
-static int uart_used;
 static int __init sw_serial_init(void)
 {
-    int ret;
-    int i;
-    int used = 0;
-    char uart_para[16];
-    
-    uart_used = 0;
-    for (i=0; i<MAX_PORTS; i++, used=0) {
-        sprintf(uart_para, "uart_para%d", i);
-        ret = script_parser_fetch(uart_para, "uart_used", &used, sizeof(int));
-        if (ret)
-            UART_MSG("failed to get uart%d's used information\n", i);
-        if (used) {
-            uart_used |= 1 << i;
-            platform_device_register(&sw_uart_dev[i]);
-        }
-    }
-    
-    if (uart_used) {
-        UART_MSG("used uart info.: 0x%02x\n", uart_used);
-        ret = platform_driver_register(&sw_serial_driver);
-        return ret;
-    }
-
-	return 0;
+    return platform_driver_register(&sw_serial_driver);
 }
 
 static void __exit sw_serial_exit(void)
 {
-	int i;
-    if (uart_used)
-	    platform_driver_unregister(&sw_serial_driver);
-
-	for (i = 0; i < MAX_PORTS; i++) {
-		if (uart_used & (1 << i))
-			platform_device_unregister(&sw_uart_dev[i]);
-	}
+    platform_driver_unregister(&sw_serial_driver);
 }
 
 MODULE_AUTHOR("Aaron.myeh<leafy.myeh@allwinnertech.com>");
