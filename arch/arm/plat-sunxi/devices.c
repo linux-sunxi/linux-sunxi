@@ -33,6 +33,8 @@
 #include <linux/pda_power.h>
 #include <linux/io.h>
 #include <linux/i2c.h>
+#include <linux/delay.h>
+#include <linux/ahci_platform.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -44,6 +46,9 @@
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 #include <plat/ramconsole.h>
 #endif
+
+#include <plat/sys_config.h>
+#include <plat/ahci.h>
 
 #if 0
 /* uart */
@@ -228,6 +233,196 @@ static struct platform_device sun4i_ramconsole = {
 };
 #endif
 
+/* ahci */
+
+static int sunxi_ahci_phy_init(u32 base)
+{
+	u32 value;
+	int timeout;
+	
+	writel(0, base + SW_AHCI_RWCR_OFFSET);
+	mdelay(5);
+	
+	value = readl(base + SW_AHCI_PHYCS1R_OFFSET);
+	value |= (0x1 <<19); 
+	writel(value, base + SW_AHCI_PHYCS1R_OFFSET);
+		
+	value = readl(base + SW_AHCI_PHYCS0R_OFFSET);
+	value |= 0x1 << 23; 
+	value |= 0x1 << 18; 
+	value &= ~(0x7 << 24); 
+	value |= 0x5 << 24; 
+	writel(value, base + SW_AHCI_PHYCS0R_OFFSET);
+	
+	value = readl(base + SW_AHCI_PHYCS1R_OFFSET);
+	value &= ~(0x3 << 16); 
+	value |= (0x2 << 16); 	
+	value &= ~(0x1f << 8);
+	value |= (6 << 8); 	
+	value &= ~(0x3 << 6); 
+	value |= (2 << 6); 	
+	writel(value, base + SW_AHCI_PHYCS1R_OFFSET);
+	
+	value = readl(base + SW_AHCI_PHYCS1R_OFFSET);
+	value |= (0x1 << 28); 
+	value |= (0x1 << 15); 
+	writel(value, base + SW_AHCI_PHYCS1R_OFFSET);
+	
+	value = readl(base + SW_AHCI_PHYCS1R_OFFSET);
+	value &= ~(0x1 << 19); 
+	writel(value, base + SW_AHCI_PHYCS1R_OFFSET);
+		
+	value = readl(base + SW_AHCI_PHYCS0R_OFFSET);
+	value &= ~(0x7 << 20); 
+	value |= (0x03 << 20);  
+	writel(value, base + SW_AHCI_PHYCS0R_OFFSET);
+		
+	value = readl(base + SW_AHCI_PHYCS2R_OFFSET);
+	value &= ~(0x1f << 5); 
+	value |= (0x19 << 5);  
+	writel(value, base + SW_AHCI_PHYCS2R_OFFSET);
+		
+	mdelay(5);
+	
+	value = readl(base + SW_AHCI_PHYCS0R_OFFSET);
+	value |= (0x1 << 19); 
+	writel(value, base + SW_AHCI_PHYCS0R_OFFSET);
+		
+	timeout = 0x100000;
+	do {
+		value = readl(base + SW_AHCI_PHYCS0R_OFFSET);
+		timeout --;
+		if(!timeout) break;
+	}while((value & (0x7 << 28)) != (0x02 << 28)); 
+	
+	if(!timeout) {
+		printk("SATA AHCI Phy Power Failed!!\n");
+	}
+	
+	value = readl(base + SW_AHCI_PHYCS2R_OFFSET);
+	value |= (0x1 << 24); 
+	writel(value, base + SW_AHCI_PHYCS2R_OFFSET);
+	
+	timeout = 0x100000;
+	do{
+		value = readl(base + SW_AHCI_PHYCS2R_OFFSET);
+		timeout --;
+		if(!timeout) break;
+	}while(value & (0x1 << 24)); 
+	
+	if(!timeout) {
+		printk("SATA AHCI Phy Calibration Failed!!\n");
+	}
+	
+	mdelay(15);
+	writel(0x07, base + SW_AHCI_RWCR_OFFSET);
+	
+	return 0;		
+}
+
+static int sunxi_ahci_start(struct device *dev, void __iomem *addr)
+{
+	struct clk *hclk;
+	struct clk *mclk;
+	int ctrl = 0;
+	int rc = 0;
+		
+	script_parser_fetch("sata_para", "sata_used", &ctrl, sizeof(int));
+	if(!ctrl) {
+		dev_err(dev, "AHCI is disable\n");
+		rc = -EINVAL;
+    	goto err2;
+	}	
+
+	/*Enable mclk and hclk for AHCI*/
+	mclk = clk_get(dev, "sata");
+	if (IS_ERR(mclk))
+    {
+    	dev_err(dev, "Error to get module clk for AHCI\n");
+    	rc = -EINVAL;
+    	goto err2;
+    }
+    
+	hclk = clk_get(dev, "ahb_sata");
+	if (IS_ERR(hclk))
+	{
+		dev_err(dev, "Error to get ahb clk for AHCI\n");
+    	rc = -EINVAL;
+    	goto err1;
+	}
+	
+	/*Enable SATA Clock in SATA PLL*/
+	clk_enable(mclk);
+	clk_enable(hclk);
+	
+	sunxi_ahci_phy_init((u32)addr);
+	
+	clk_put(hclk);
+err1:
+	clk_put(mclk);	
+err2:	
+	return rc;
+}
+
+static void sunxi_ahci_stop(struct device *dev)
+{
+	struct clk *hclk;
+	struct clk *mclk;
+	int rc = 0;
+		
+	mclk = clk_get(dev, "sata");
+	if (IS_ERR(mclk)) {
+    	dev_err(dev, "Error to get module clk for AHCI\n");
+    	rc = -EINVAL;
+    	goto err2;
+    }
+    
+	hclk = clk_get(dev, "ahb_sata");
+	if (IS_ERR(hclk)) {
+		dev_err(dev, "Error to get ahb clk for AHCI\n");
+    	rc = -EINVAL;
+    	goto err1;
+	}
+	
+	/*Disable mclk and hclk for AHCI*/
+	clk_disable(mclk);
+	clk_disable(hclk);
+	clk_put(hclk);
+err1:
+	clk_put(mclk);
+err2:
+	return;
+}
+
+static struct ahci_platform_data sunxi_ahci_pdata = {
+	.init = sunxi_ahci_start,
+	.exit = sunxi_ahci_stop,
+};
+
+static struct resource sunxi_ahci_resources[] = {
+	{
+		.start	= SW_PA_SATA_IO_BASE,
+		.end	= SW_PA_SATA_IO_BASE + 0xfff,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+    	.start	= SW_INT_IRQNO_SATA,
+    	.end	= SW_INT_IRQNO_SATA,
+    	.flags	= IORESOURCE_IRQ,
+    },
+};
+
+struct platform_device sunxi_ahci_device = {
+	.name		= "ahci",
+	.id		    = 0,
+	.resource	= sunxi_ahci_resources,
+	.num_resources	= ARRAY_SIZE(sunxi_ahci_resources),
+	.dev = {
+		.platform_data = &sunxi_ahci_pdata,
+		.coherent_dma_mask	= DMA_32BIT_MASK,
+	},
+};
+
 static struct platform_device *sw_pdevs[] __initdata = {
 #if 0
 	&debug_uart,
@@ -238,6 +433,7 @@ static struct platform_device *sw_pdevs[] __initdata = {
 	&sunxi_twi1_device,
 	&sunxi_twi2_device,
 	&sunxi_pmu_device,
+	&sunxi_ahci_device,
 #if defined(CONFIG_MALI_DRM) || defined(CONFIG_MALI_DRM_MODULE)
 	&sunxi_device_mali_drm,
 #endif

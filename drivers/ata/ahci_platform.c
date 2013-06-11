@@ -36,6 +36,10 @@ static int __init ahci_probe(struct platform_device *pdev)
 		.pio_mask	= ATA_PIO4,
 		.udma_mask	= ATA_UDMA6,
 		.port_ops	= &ahci_ops,
+#ifdef CONFIG_ARCH_SUN4I
+		.private_data= (void*)(AHCI_HFLAG_32BIT_ONLY | AHCI_HFLAG_NO_MSI 
+							| AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
+#endif
 	};
 	const struct ata_port_info *ppi[] = { &pi, NULL };
 	struct ahci_host_priv *hpriv;
