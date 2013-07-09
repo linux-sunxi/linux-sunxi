@@ -1,0 +1,6 @@
+config RT5370
+	tristate "Ralink 3050/3052/3352 USB WiFi"
+	depends on USB
+    select WEXT_PRIV
+	---help---
+
