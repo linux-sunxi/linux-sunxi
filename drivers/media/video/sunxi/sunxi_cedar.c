@@ -1,5 +1,5 @@
 /*
- * drivers\media\video\sun5i\sun5i_cedar.c
+ * drivers\media\video\sunxi\sunxi_cedar.c
  * (C) Copyright 2007-2011
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * huangxin <huangxin@allwinnertech.com>
@@ -44,11 +44,9 @@
 #include <asm/signal.h>
 #include <mach/system.h>
 #include <mach/clock.h>
-#include "sun5i_cedar.h"
+#include "sunxi_cedar.h"
 
 #define DRV_VERSION "0.01alpha"
-
-#define CHIP_VERSION_F23
 
 #undef USE_CEDAR_ENGINE
 
@@ -61,16 +59,15 @@
 
 //#define CEDAR_DEBUG
 
+#define CONFIG_SW_SYSMEM_RESERVED_BASE 0x43000000
+#define CONFIG_SW_SYSMEM_RESERVED_SIZE 75776
+
 int g_dev_major = CEDARDEV_MAJOR;
 int g_dev_minor = CEDARDEV_MINOR;
 module_param(g_dev_major, int, S_IRUGO);//S_IRUGO represent that g_dev_major can be read,but canot be write
 module_param(g_dev_minor, int, S_IRUGO);
 
-#ifdef CHIP_VERSION_F23
-#define VE_IRQ_NO (53)
-#else
-#define VE_IRQ_NO (48)
-#endif
+#define VE_IRQ_NO (SW_INT_IRQNO_VE)
 
 struct clk *ve_moduleclk = NULL;
 struct clk *ve_pll4clk = NULL;
@@ -79,18 +76,14 @@ struct clk *dram_veclk = NULL;
 struct clk *avs_moduleclk = NULL;
 struct clk *hosc_clk = NULL;
 
-static unsigned long pll4clk_rate = 240000000;
+static unsigned long pll4clk_rate = 720000000;
 
 extern unsigned long ve_start;
 extern unsigned long ve_size;
-
+extern int flush_clean_user_range(long start, long end);
 struct iomap_para{
 	volatile char* regs_macc;
-	#ifdef CHIP_VERSION_F23
 	volatile char* regs_avs;
-	#else
-	volatile char* regs_ccmu;
-	#endif
 };
 
 static DECLARE_WAIT_QUEUE_HEAD(wait_ve);
@@ -416,47 +409,71 @@ static void cedar_engine_for_events(unsigned long arg)
 	spin_unlock_irqrestore(&cedar_spin_lock, flags);
 }
 
-#ifdef CHIP_VERSION_F23
 static unsigned int g_ctx_reg0;
 static void save_context(void)
 {
-	g_ctx_reg0 = readl(0xf1c20e00);
+	if (SUNXI_VER_A10A == sw_get_ic_ver() ||
+	    SUNXI_VER_A13A == sw_get_ic_ver())
+		g_ctx_reg0 = readl(0xf1c20e00);
 }
 
 static void restore_context(void)
 {
-	writel(g_ctx_reg0, 0xf1c20e00);
+	if (SUNXI_VER_A10A == sw_get_ic_ver() ||
+	    SUNXI_VER_A13A == sw_get_ic_ver())
+		writel(g_ctx_reg0, 0xf1c20e00);
 }
-#else
-	#define save_context()
-	#define restore_context()
+
+static long __set_ve_freq (int arg)
+{
+	/*
+	** Although the Allwinner sun7i driver sources indicate that the VE
+	** clock can go up to 500MHz, very simple JPEG and MPEG decoding
+	** tests show it can't run reliably at even 408MHz.  Keeping the
+	** sun4i max setting seems best until more information is available.
+	*/
+	int max_rate = 320000000;
+	int min_rate = 100000000;
+	int arg_rate = arg * 1000000;	/* arg_rate is specified in MHz */
+	int divisor;
+
+	if (arg_rate > max_rate)
+		arg_rate = max_rate;
+	if (arg_rate < min_rate)
+		arg_rate = min_rate;
+
+	/*
+	** compute integer divisor of pll4clk_rate so that:
+	** ve_moduleclk >= arg_rate
+	**
+	** clamp divisor so that:
+	** min_rate <= ve_moduleclk <= max_rate
+	** 1 <= divisor <= 8
+	*/
+
+	divisor = pll4clk_rate / arg_rate;
+
+	if (divisor == 0)
+		divisor = 1;
+	else if (pll4clk_rate / divisor < min_rate && divisor > 1)
+		divisor--;
+	else if (pll4clk_rate / divisor > max_rate)
+		divisor++;
+
+	/* VE PLL divisor can't be > 8 */
+	if (divisor > 8)
+		divisor = 8;
+
+	if (clk_set_rate(ve_moduleclk, pll4clk_rate / divisor) == -1) {
+		printk("IOCTL_SET_VE_FREQ: error setting clock; pll4clk_rate = %lu, requested = %lu\n", pll4clk_rate, pll4clk_rate / divisor);
+		return -EFAULT;
+	}
+#ifdef CEDAR_DEBUG
+	printk("IOCTL_SET_VE_FREQ: pll4clk_rate = %lu, divisor = %d, arg_rate= %d, ve_moduleclk = %lu\n", pll4clk_rate, divisor, arg_rate, clk_get_rate(ve_moduleclk));
 #endif
 
-#ifdef CHIP_VERSION_F23
-short VEPLLTable[][6] =
-{
-	//set, actual, Nb, Kb, Mb, Pb
-	{ 60,  60,  5,  2,  2,  1},
-	{ 90,  90,  5,  2,  0,  2},
-	{120, 120,  5,  2,  2,  0},
-	{150, 150, 25,  0,  0,  2},
-	{180, 180,  5,  2,  0,  1},
-	{216, 216,  6,  2,  0,  1},
-	{240, 240,  5,  3,  0,  1},
-	{270, 270, 15,  2,  0,  2},
-	{300, 300, 25,  0,  0,  1},
-	{330, 336,  7,  1,  0,  0},
-	{360, 360,  5,  2,  0,  0},
-	{384, 384,  4,  3,  0,  0},
-	{402, 400, 25,  1,  2,  0},
-	{420, 416, 13,  3,  2,  0},
-	{444, 448, 14,  3,  2,  0},
-	{456, 456, 19,  0,  0,  0},
-	{468, 468, 13,  2,  0,  1},
-	{480, 480,  5,  3,  0,  0},
-	{492, 496, 31,  1,  2,  0},
-};
-#endif
+	return 0;
+}
 
 /*
  * ioctl function
@@ -478,7 +495,7 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct cedarv_engine_task *task_ptr = NULL;
 #endif
 	unsigned long flags;
-		//unsigned int val;
+
 	devp = filp->private_data;
 
 	switch (cmd)
@@ -603,30 +620,11 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             clk_disable(dram_veclk);
             clk_reset(ve_moduleclk, 1);
             clk_reset(ve_moduleclk, 0);
-            	/*********for fpga*********/
-//	val = readl(0xf1c2013c);
-//	val &= ~0x00000001;
-//	writel(val,0xf1c2013c);
-//	val |= 0x00000001;
-//	writel(val,0xf1c2013c);
-	/*********for fpga*********/
             clk_enable(dram_veclk);
 		break;
 
 		case IOCTL_SET_VE_FREQ:
-			{
-//				int arg_rate = (int)arg;
-//				if(arg_rate >= 320){
-//					clk_set_rate(ve_moduleclk, pll4clk_rate/3);//ve_moduleclk rate is 320khz
-//				}else if((arg_rate >= 240) && (arg_rate < 320)){
-//					clk_set_rate(ve_moduleclk, pll4clk_rate/4);//ve_moduleclk rate is 240khz
-//				}else if((arg_rate >= 160) && (arg_rate < 240)){
-//					clk_set_rate(ve_moduleclk, pll4clk_rate/6);//ve_moduleclk rate is 160khz
-//				}else{
-//					printk("IOCTL_SET_VE_FREQ set ve freq error,%s,%d\n", __func__, __LINE__);
-//				}
-			break;
-			}
+			return __set_ve_freq((int) arg);
         case IOCTL_GETVALUE_AVS2:
 			/* Return AVS1 counter value */
             return readl(cedar_devp->iomap_addrs.regs_avs + 0x88);
@@ -635,7 +633,6 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         {
             int arg_s = (int)arg;
             int temp;
-            if (SUNXI_VER_A13A == sw_get_ic_ver()) {
 	            save_context();
 	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x8c);
 	            temp = v & 0xffff0000;
@@ -648,21 +645,6 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	            #endif
 	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x8c);
 	            restore_context();
-	        } else if (SUNXI_VER_A13B == sw_get_ic_ver()) {
-				v = readl(cedar_devp->iomap_addrs.regs_avs + 0x8c);
-	            temp = v & 0xffff0000;
-	            temp =temp + temp*arg_s/100;
-				temp = temp > (244<<16) ? (244<<16) : temp;
-				temp = temp < (234<<16) ? (234<<16) : temp;
-	            v = (temp & 0xffff0000) | (v&0x0000ffff);
-	            #ifdef CEDAR_DEBUG
-	            printk("Kernel AVS ADJUST Print: 0x%x\n", v);
-	            #endif
-	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x8c);
-	        }else{
-	        	printk("IOCTL_ADJUST_AVS2 error:%s,%d\n", __func__, __LINE__);
-        		return -EFAULT;
-	        }
             break;
         }
 
@@ -689,25 +671,15 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             	break;
             }
 
-            if (SUNXI_VER_A13A == sw_get_ic_ver()) {
 	            save_context();
 	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x8c);
 	            v = (v_dst<<16)  | (v&0x0000ffff);
 	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x8c);
 	            restore_context();
-	        } else if(SUNXI_VER_A13B == sw_get_ic_ver()) {
-	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x8c);
-	            v = (v_dst<<16)  | (v&0x0000ffff);
-	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x8c);
-	        }else{
-	        	printk("IOCTL_ADJUST_AVS2 error:%s,%d\n", __func__, __LINE__);
-        		return -EFAULT;
-	        }
             break;
         }
 
         case IOCTL_CONFIG_AVS2:
-		if (SUNXI_VER_A13A == sw_get_ic_ver()) {
 	        	save_context();
 				/* Set AVS counter divisor */
 	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x8c);
@@ -722,73 +694,31 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				/* Set AVS_CNT1 init value as zero  */
 	            writel(0, cedar_devp->iomap_addrs.regs_avs + 0x88);
 				restore_context();
-		} else if (SUNXI_VER_A13B == sw_get_ic_ver()) {
-				/* Set AVS counter divisor */
-	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x8c);
-	            v = 239 << 16 | (v & 0xffff);
-	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x8c);
-
-				/* Enable AVS_CNT1 and Pause it */
-	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x80);
-	            v |= 1 << 9 | 1 << 1;
-	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x80);
-
-				/* Set AVS_CNT1 init value as zero  */
-	            writel(0, cedar_devp->iomap_addrs.regs_avs + 0x88);
-        	}else{
-        		printk("IOCTL_CONFIG_AVS2 error:%s,%d\n", __func__, __LINE__);
-        		return -EFAULT;
-        	}
             break;
 
         case IOCTL_RESET_AVS2:
             /* Set AVS_CNT1 init value as zero */
-            if (SUNXI_VER_A13A == sw_get_ic_ver()) {
 	        	save_context();
 	            writel(0, cedar_devp->iomap_addrs.regs_avs + 0x88);
 	            restore_context();
-		} else if(SUNXI_VER_A13B == sw_get_ic_ver()) {
-        		writel(0, cedar_devp->iomap_addrs.regs_avs + 0x88);
-        	}else{
-        		printk("IOCTL_RESET_AVS2 error:%s,%d\n", __func__, __LINE__);
-        		return -EFAULT;
-        	}
             break;
 
         case IOCTL_PAUSE_AVS2:
             /* Pause AVS_CNT1 */
-		if (SUNXI_VER_A13A == sw_get_ic_ver()) {
 	        	save_context();
 	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x80);
 	            v |= 1 << 9;
 	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x80);
 	            restore_context();
-		} else if(SUNXI_VER_A13B == sw_get_ic_ver()) {
-	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x80);
-	            v |= 1 << 9;
-	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x80);
-        	}else{
-        		printk("IOCTL_PAUSE_AVS2 get error:%s,%d\n", __func__, __LINE__);
-        		return -EFAULT;
-        	}
             break;
 
         case IOCTL_START_AVS2:
         	/* Start AVS_CNT1 : do not pause */
-		if (SUNXI_VER_A13A == sw_get_ic_ver()) {
 	        	save_context();
 	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x80);
 	            v &= ~(1 << 9);
 	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x80);
 	            restore_context();
-		} else if(SUNXI_VER_A13B == sw_get_ic_ver()) {
-	            v = readl(cedar_devp->iomap_addrs.regs_avs + 0x80);
-	            v &= ~(1 << 9);
-	            writel(v, cedar_devp->iomap_addrs.regs_avs + 0x80);
-        	}else{
-        		printk("IOCTL_START_AVS2 error:%s,%d\n", __func__, __LINE__);
-        		return -EFAULT;
-        	}
             break;
 
         case IOCTL_GET_ENV_INFO:
@@ -803,15 +733,51 @@ long cedardev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         break;
         case IOCTL_GET_IC_VER:
         {
-		if (SUNXI_VER_A13A == sw_get_ic_ver()) {
+		if (SUNXI_VER_A10A == sw_get_ic_ver() ||
+		    SUNXI_VER_A13A == sw_get_ic_ver()) {
         		return 0x0A10000A;
-		} else if(SUNXI_VER_A13B == sw_get_ic_ver()) {
+		} else if (SUNXI_VER_A10B == sw_get_ic_ver() ||
+			   SUNXI_VER_A10C == sw_get_ic_ver() ||
+			   SUNXI_VER_A13B == sw_get_ic_ver() ||
+			   SUNXI_VER_A20 == sw_get_ic_ver()) {
         		return 0x0A10000B;
         	}else{
         		printk("IC_VER get error:%s,%d\n", __func__, __LINE__);
         		return -EFAULT;
         	}
         }
+        case IOCTL_FLUSH_CACHE:
+        {
+        	struct cedarv_cache_range cache_range;
+    		if(copy_from_user(&cache_range, (void __user*)arg, sizeof(struct cedarv_cache_range))){
+				printk("IOCTL_FLUSH_CACHE copy_from_user fail\n");
+				return -EFAULT;
+			}
+			flush_clean_user_range(cache_range.start, cache_range.end);
+        }
+        break;
+
+	case IOCTL_SET_REFCOUNT:
+		cedar_devp->ref_count = (int)arg;
+		break;
+
+	case IOCTL_READ_REG:
+	{
+		struct cedarv_regop reg_para;
+		if(copy_from_user(&reg_para, (void __user*)arg, sizeof(struct cedarv_regop)))
+			return -EFAULT;
+		return readl(reg_para.addr);
+	}
+
+	case IOCTL_WRITE_REG:
+	{
+		struct cedarv_regop reg_para;
+		if(copy_from_user(&reg_para, (void __user*)arg, sizeof(struct cedarv_regop)))
+			return -EFAULT;
+		writel(reg_para.value, reg_para.addr);
+		break;
+	}
+
         default:
         break;
     }
@@ -883,7 +849,7 @@ static int cedardev_mmap(struct file *filp, struct vm_area_struct *vma)
         vma->vm_flags |= VM_RESERVED | VM_IO;
 
         /* Select uncached access. */
-        vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+        //vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 
         if (remap_pfn_range(vma, vma->vm_start, temp_pfn,
                             vma->vm_end - vma->vm_start, vma->vm_page_prot)) {
@@ -936,7 +902,7 @@ static struct file_operations cedardev_fops = {
 
 /*data relating*/
 static struct platform_device sw_device_cedar = {
-	.name = "sun4i-cedar",
+	.name = "sunxi-cedar",
 };
 
 /*method relating*/
@@ -946,7 +912,7 @@ static struct platform_driver sw_cedar_driver = {
 	.resume		= snd_sw_cedar_resume,
 #endif
 	.driver		= {
-		.name	= "sun4i-cedar",
+		.name	= "sunxi-cedar",
 	},
 };
 
@@ -1015,11 +981,7 @@ static int __init cedardev_init(void)
 	val = readl(0xf1c00000);
 	val |= 0x7fffffff;
 	writel(val,0xf1c00000);
-	/*********for fpga*********/
-//	val = readl(0xf1c2013c);
-//	val |= 0x00000001;
-//	writel(val,0xf1c2013c);
-	/*********for fpga*********/
+
 	ve_pll4clk = clk_get(NULL,"ve_pll");
 	pll4clk_rate = clk_get_rate(ve_pll4clk);
 	/* getting ahb clk for ve!(macc) */
@@ -1029,16 +991,12 @@ static int __init cedardev_init(void)
 		printk("set parent of ve_moduleclk to ve_pll4clk failed!\n");
 		return -EFAULT;
 	}
-	clk_set_rate(ve_moduleclk, pll4clk_rate/2);
-	//	//macc PLL
-//	val = readl(0xf1c20018);
-//	val &= 0x7ffc0000;
-//	val |= 1<<31;
-//	val |= (0x0)<<16; //Pb
-//	val |= (0x3)<<8; //Nb
-//	val |= (0x3)<<4; //Kb
-//	val |= (0x0)<<0; //Mb
-//	writel(val,0xf1c20018);
+	if (SUNXI_VER_A20 == sw_get_ic_ver())
+		/* default the ve freq to 300M for A20 (from sun7i_cedar.c) */
+		__set_ve_freq(300);
+	else
+		/*default the ve freq to 160M by lys 2011-12-23 15:25:34*/
+		__set_ve_freq(160);
 	/*geting dram clk for ve!*/
 	dram_veclk = clk_get(NULL, "sdram_ve");
 	hosc_clk = clk_get(NULL,"hosc");

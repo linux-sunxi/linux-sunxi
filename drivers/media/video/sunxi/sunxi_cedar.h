@@ -1,5 +1,5 @@
 /*
- * drivers/media/video/sun5i/sun5i_cedar.h
+ * drivers/media/video/sunxi/sunxi_cedar.h
  *
  * (C) Copyright 2007-2012
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
@@ -29,7 +29,7 @@
 *						        	 (c) Copyright 2009-2012, ,HUANGXIN China
 *											 All Rights Reserved
 *
-* File    	: sun4i_cedar.h
+* File    	: sunxi_cedar.h
 * By      	: HUANGXIN
 * Func		:
 * Version	: v1.0
@@ -37,8 +37,8 @@
 * 2011-5-25 9:57:05  HUANGXIN create this file, implements the fundemental interface;
 **************************************************************************************************************
 */
-#ifndef _SUN4I_CEDAR_H_
-#define _SUN4I_CEDAR_H_
+#ifndef _SUNXI_CEDAR_H_
+#define _SUNXI_CEDAR_H_
 
 enum IOCTL_CMD {
 	IOCTL_UNKOWN = 0x100,
@@ -61,12 +61,22 @@ enum IOCTL_CMD {
 	IOCTL_GET_IC_VER,
 
 	IOCTL_ADJUST_AVS2_ABS,
+	IOCTL_FLUSH_CACHE,
+	IOCTL_SET_REFCOUNT,
+
+	IOCTL_READ_REG = 0x300,
+	IOCTL_WRITE_REG,
 };
 
 struct cedarv_env_infomation{
 	unsigned int phymem_start;
 	int  phymem_total_size;
 	unsigned int  address_macc;
+};
+
+struct cedarv_cache_range{
+	long start;
+	long end;
 };
 
 struct __cedarv_task {
@@ -91,6 +101,11 @@ struct cedarv_engine_task_info {
 	int task_prio;
 	unsigned int frametime;
 	unsigned int total_time;
+};
+
+struct cedarv_regop {
+	unsigned int addr;
+	unsigned int value;
 };
 
 /*--------------------------------------------------------------------------------*/

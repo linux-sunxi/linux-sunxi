@@ -1,0 +1,18 @@
+config VIDEO_DECODER_SUNXI
+	tristate "sunxi video decoder support"
+	depends on VIDEO_SUNXI_CEDAR
+	default m
+	---help---
+	  This is the driver for sunxi video decoder, including h264/
+	  mpeg4/mpeg2/vc1/rmvb.
+	  To compile this driver as a module, choose M here: the
+	  module will be called cedar_dev.
+
+config VIDEO_AVS_COUNTER
+	tristate "sunxi av-sync counter support"
+	depends on VIDEO_SUNXI_CEDAR
+	default n
+	---help---
+	  This is the driver for sunxi av-sync counter.
+	  To compile this driver as a module, choose M here: the
+	  module will be called avs_dev.
