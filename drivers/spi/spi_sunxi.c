@@ -934,7 +934,7 @@ static int spi_sunxi_xfer(struct spi_device *spi, struct spi_transfer *t)
     /* reset tx/rx fifo */
     aw_spi_reset_fifo(base_addr);
 
-    aw_spi_set_bc_wtc(t->len, tx_len, base_addr);
+    aw_spi_set_bc_wtc(tx_len+rx_len, tx_len, base_addr);
 
     /*
      * 1. Tx/Rx error irq,process in IRQ;
