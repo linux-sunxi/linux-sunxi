@@ -893,4 +893,14 @@ config  TOUCHSCREEN_COASIA
        tristate  "COASIA touchscreen driver"
        help
           COASIA touchscreen driver
+
+config  TOUCHSCREEN_GSLX680
+       tristate  "GSLX680 touchscreen driver"
+       help
+          GSLX680 touchscreen driver
+
+config  TOUCHSCREEN_EKTF2K
+       tristate  "Elan touchscreen driver"
+       help
+          Elan touchscreen driver	  
 endif
