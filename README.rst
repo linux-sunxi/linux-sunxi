@@ -2,40 +2,37 @@
 STEPS TO BUILD KERNEL FOR AAKASH
 ================================
 
-For Kernel documentation please find ``README_kernel``
+For original README, please see: ``README_kernel``
 
 
-COMPILING KERNEL
+COMPILE KERNEL
 ----------------
 
 1. Clone the repository by ::
     
         git clone https://github.com/androportal/linux-sunxi.git
 
-
 #. ``cd`` into ``linux-sunxi`` ::
 
         cd linux-sunxi
 
+#. Checkout to desired branch, it this case ``sunxi-3.4``::
 
-#. Checkout to desired branch, it this case ``sunxi-3.0``::
+        git checkout sunxi-3.4
 
-        git checkout sunxi-3.0
-
-#. Compile the a13_configuration ::
+#. Compile the a13_configuration(Optional, not required if you are using our config file) ::
 
         make ARCH=arm a13_defconfig
 
+#. Rename kernel config file ::
 
-#. A13-OLinuXino customization can be done using ::
+     cp -v config-3.4.79 .config
+
+#. A13-OLinuXino customization can be done using(Optional, if you have
+   followed previous step(i.e you have ``.config`` file in kernel
+   source), don't do this) ::
 
         make ARCH=arm menuconfig
-
-
-#. Install ``u-boot-tools``::
-
-        sudo apt-get install u-boot-tools
-
 
 #. To compile kernel download and install ``Sourcery CodeBench Lite Edition``, then issue::
 
@@ -45,16 +42,42 @@ COMPILING KERNEL
         
         make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi- INSTALL_MOD_PATH=out modules
 
-
 #. To install modules in right path ::
 
         make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi- INSTALL_MOD_PATH=out modules_install
 
-
-#.  After successful compilation ``uImage`` will be available at ``arch/arm/boot/uImage`` and
-    also find ``script.bin`` in the root of the directory(This section is subject to change)
+#.  After successful compilation, ``uImage`` will be available at ``arch/arm/boot/uImage`` and
+    also find ``script.bin`` in the root of the directory(This section is subject to change), the
+    kernel modules are available at ``out/lib/modules/3.4.79+/`` 
     
 
+Compile kernel in a clean way(Optional)
+-----------------------------
+
+1. If you want to keep the kernel source clean and have a kernel build
+   in a separate directory, follow this steps.
+
+#. Assuming you have downloaded the kernel, and you have ``.config``
+   file in the source tree, make a separate directory ``build``
+   outside the kernel source. For example, if the kernel source is in
+   the path ``~/kernel/linux-sunxi``, create ``build`` directory in
+   ``~/kernel/`` ::
+
+     mkdir ~/kernel/build
+
+#. Now move ``.config`` file in build path ::
+
+     mv -v ~/kernel/linux-sunxi/.config ~/kernel/build/
+
+#. Now specify the build directory path to ``make``  ::
+
+     make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi- uImage O=~/kernel/build
+     make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi- O=~/kernel/build INSTALL_MOD_PATH=out modules
+     make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi- O=~/kernel/build INSTALL_MOD_PATH=out modules_install
+
+#. Now your ``uImage`` file will be compiled inside
+   ``~/kernel/build/arch/arm/boot`` directory and all your modules
+   will be placed inside ``~/kernel/build/out`` directory.
 
 KERNEL ON SDCARD
 ----------------
@@ -110,6 +133,8 @@ KERNEL ON SDCARD
         Last sector, +sectors or +size{K,M,G} (34816-7744511, default 7744511): 
         Using default value 7744511
 
+#. (Optional) If you intend to use ``swap`` partion, leave atleast ~300MB in previous step and create a 3rd primary partition.
+
 #. Now as we have created 2 primary partitions now let's write(w) the changes to disk. For that issue::
 
         Command (m for help): w
@@ -150,5 +175,3 @@ KERNEL ON SDCARD
 
 At this point we have a sdcard readly with kernel. Burn uboot and copy rootfs to make a usuable
 Linux for your tablet. 
-
-    
