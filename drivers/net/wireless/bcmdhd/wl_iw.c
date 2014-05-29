@@ -384,6 +384,7 @@ typedef int (*iw_handler)(struct net_device *dev, struct iw_request_info *info,
 	void *wrqu, char *extra);
 #endif /* WIRELESS_EXT < 13 */
 
+#ifdef CONFIG_WEXT_PRIV
 #if WIRELESS_EXT > 12
 static int
 wl_iw_set_leddc(
@@ -435,6 +436,7 @@ wl_iw_set_pm(
 #if WIRELESS_EXT > 17
 #endif /* WIRELESS_EXT > 17 */
 #endif /* WIRELESS_EXT > 12 */
+#endif /* CONFIG_WEXT_PRIV */
 
 int
 wl_iw_send_priv_event(
@@ -2919,6 +2921,7 @@ enum {
 	WL_IW_SET_LAST
 };
 
+#ifdef CONFIG_WEXT_PRIV
 static iw_handler wl_iw_priv_handler[] = {
 	wl_iw_set_leddc,
 	wl_iw_set_vlanmode,
@@ -2951,15 +2954,20 @@ static struct iw_priv_args wl_iw_priv_args[] = {
 #endif /* WIRELESS_EXT > 17 */
 	{ 0, 0, 0, { 0 } }
 };
+#endif /* CONFIG_WEXT_PRIV */
 
 const struct iw_handler_def wl_iw_handler_def =
 {
+#ifdef CONFIG_WEXT_PRIV
 	.num_standard = ARRAYSIZE(wl_iw_handler),
 	.num_private = ARRAY_SIZE(wl_iw_priv_handler),
 	.num_private_args = ARRAY_SIZE(wl_iw_priv_args),
+#endif /* CONFIG_WEXT_PRIV */
 	.standard = (iw_handler *) wl_iw_handler,
+#ifdef CONFIG_WEXT_PRIV
 	.private = wl_iw_priv_handler,
 	.private_args = wl_iw_priv_args,
+#endif /* CONFIG_WEXT_PRIV */
 #if WIRELESS_EXT >= 19
 	get_wireless_stats: dhd_get_wireless_stats,
 #endif /* WIRELESS_EXT >= 19 */
