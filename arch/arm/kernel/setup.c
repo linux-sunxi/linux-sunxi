@@ -31,6 +31,7 @@
 #include <linux/bug.h>
 #include <linux/compiler.h>
 #include <linux/sort.h>
+#include <linux/io.h>
 
 #include <asm/unified.h>
 #include <asm/cp15.h>
@@ -1102,6 +1103,14 @@ static int c_show(struct seq_file *m, void *v)
 	seq_printf(m, "Revision\t: %04x\n", system_rev);
 	seq_printf(m, "Serial\t\t: %08x%08x\n",
 		   system_serial_high, system_serial_low);
+
+	#define SW_VA_SID_IO_BASE 0xf1c23800
+	seq_printf(m, "Chipid\t\t: %08x-%08x-%08x-%08x\n",
+		readl(SW_VA_SID_IO_BASE),
+		readl(SW_VA_SID_IO_BASE + 0x4),
+		readl(SW_VA_SID_IO_BASE + 0x8),
+		readl(SW_VA_SID_IO_BASE + 0xc)
+ 		);
 
 	return 0;
 }

@@ -773,21 +773,30 @@ static void gmac_dma_interrupt(struct gmac_priv *priv)
 
 static void gmac_check_ether_addr(struct gmac_priv *priv)
 {
-	int i;
-	char *p = mac_str;
-	/* verify if the MAC address is valid, in case of failures it
-	 * generates a random MAC address */
-	if (!is_valid_ether_addr(priv->ndev->dev_addr)) {
-		if  (!is_valid_ether_addr(priv->ndev->dev_addr)) {
-			for (i=0; i<6; i++,p++)
-				priv->ndev->dev_addr[i] = simple_strtoul(p, &p, 16);
-		}
+        /* verify if the MAC address is valid, in case of failures it
+         * generates a random MAC address */
+        if (!is_valid_ether_addr(priv->ndev->dev_addr)) {
+                unsigned int reg_val;
 
-		if  (!is_valid_ether_addr(priv->ndev->dev_addr))
-			random_ether_addr(priv->ndev->dev_addr);
-	}
-	printk(KERN_WARNING "%s: device MAC address %pM\n", priv->ndev->name,
-						   priv->ndev->dev_addr);
+                reg_val = readl(SW_VA_SID_IO_BASE);
+                pr_info("gmac: use mac address from chipid\n");
+                priv->ndev->dev_addr[0] = 0x02; /* Non OUI / registered MAC address */
+                priv->ndev->dev_addr[1] = (reg_val >>  0) & 0xff;
+                reg_val = readl(SW_VA_SID_IO_BASE + 0x0c);
+                priv->ndev->dev_addr[2] = (reg_val >> 24) & 0xff;
+                priv->ndev->dev_addr[3] = (reg_val >> 16) & 0xff;
+                priv->ndev->dev_addr[4] = (reg_val >>  8) & 0xff;
+                priv->ndev->dev_addr[5] = (reg_val >>  0) & 0xff;
+
+                if  (!is_valid_ether_addr(priv->ndev->dev_addr)) {
+                        random_ether_addr(priv->ndev->dev_addr);
+                        pr_info("gmac: use random mac address\n");
+                }
+        } else {
+                pr_info("gmac: use mac address from cmdline\n");
+        }
+
+        pr_info("%s: device MAC address %pM\n", priv->ndev->name, priv->ndev->dev_addr);
 }
 
 /**
