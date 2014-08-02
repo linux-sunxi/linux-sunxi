@@ -134,6 +134,14 @@ config MTD_NAND_RICOH
 	  expermental, readwrite
 	  'SmartMedia/xD new translation layer'
 
+config MTD_NAND_SUNXI
+	tristate "NAND Flash device on Allwinner SUNXI"
+	depends on ARCH_SUN4I || ARCH_SUN5I ||ARCH_SUN7I
+	default n
+	help
+	Support for NAND flash on Allwinner A10/A13/A20, don't use it with SUNXI_NAND driver!
+
+
 config MTD_NAND_AU1550
 	tristate "Au1550/1200 NAND support"
 	depends on MIPS_ALCHEMY
