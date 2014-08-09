@@ -7726,7 +7726,7 @@ cpu_cgroup_allow_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
 		tcred = __task_cred(task);
 
 		if ((current != task) && !capable(CAP_SYS_NICE) &&
-		    cred->euid != tcred->uid && cred->euid != tcred->suid)
+		    cred->euid.val != tcred->uid.val && cred->euid.val != tcred->suid.val)
 			return -EACCES;
 	}
 
