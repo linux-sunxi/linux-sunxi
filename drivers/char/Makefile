@@ -63,6 +63,7 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
 
 obj-$(CONFIG_JS_RTC)		+= js-rtc.o
 obj-$(CONFIG_SUNXI_G2D) += sunxi_g2d/
+obj-$(CONFIG_SUNXI_PHYS_MEM_ALLOCATOR)    += sunxi_mem/
 js-rtc-y = rtc.o
 
 obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
