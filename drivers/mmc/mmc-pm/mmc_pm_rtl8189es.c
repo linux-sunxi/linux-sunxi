@@ -47,8 +47,13 @@ static int rtl8189es_gpio_ctrl(char* name, int level)
 		rtl8189es_msg("Succeed to set gpio %s to %d !\n", name, level);
 
     if (strcmp(name, "rtl8189es_vdd_en") == 0) {
-        rtl8189es_powerup = level;
-        rtl8189es_msg("rtl8189es SDIO Wifi Power %s !!\n", level ? "UP" : "Off");
+        if(level){
+		rtl8189es_powerup = 0;
+	}else{
+		rtl8189es_powerup = 1;
+	}
+	//rtl8189es_powerup = level;
+        rtl8189es_msg("rtl8189es SDIO Wifi Power %s !!\n", level ? "Off" : "UP");
     }
 
     return 0;
@@ -74,16 +79,16 @@ static void rtl8189es_standby(int instadby)
     if (instadby) {
         if (rtl8189es_powerup) {
             rtl8189es_gpio_ctrl("rtl8189es_shdn", 0);
-            rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 0);
-            rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 0);
+           // rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 0);
+            rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 1);
             rtl8189es_suspend = 1;
         }
     } else {
         if (rtl8189es_suspend) {
-            rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 1);
+            rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 0);
             udelay(100);
-            rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 1);
-            udelay(50);
+           // rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 1);
+           // udelay(50);
             rtl8189es_gpio_ctrl("rtl8189es_shdn", 1);
             sunximmc_rescan_card(3, 1);
             rtl8189es_suspend = 0;
@@ -91,19 +96,21 @@ static void rtl8189es_standby(int instadby)
     }
 }
 
+//vdd_en = 0 enable the power on Banana Pro.
+//Debug by Tony.
 static void rtl8189es_power(int mode, int* updown)
 {
     if (mode) {
         if (*updown) {
-			rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 1);
+			rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 0);
 			udelay(100);
-			rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 1);
-			udelay(50);
+			//rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 1);
+			//udelay(50);
 			rtl8189es_gpio_ctrl("rtl8189es_shdn", 1);
         } else {
 			rtl8189es_gpio_ctrl("rtl8189es_shdn", 0);
-			rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 0);
-			rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 0);
+			//rtl8189es_gpio_ctrl("rtl8189es_vcc_en", 0);
+			rtl8189es_gpio_ctrl("rtl8189es_vdd_en", 1);
         }
     } else {
         if (rtl8189es_powerup)

@@ -183,10 +183,8 @@ static int sunxi_gpio_request(struct gpio_chip *chip, unsigned offset)
 		return -EINVAL;
 
 	/* Set sysfs exported gpio name (example "gpio254_ph20") */
-	sprintf((char *)(chip->names[offset]), "gpio%d_p%c%d",
-		offset+chip->base,
-		'a'+sgpio->data[offset].info.port-1,
-		sgpio->data[offset].info.port_num);
+	sprintf((char *)(chip->names[offset]), "gpio%d",
+		offset+chip->base);
 
 	sgpio->data[offset].gpio_handler = gpio_request_ex("gpio_para",
 						sgpio->data[offset].pin_name);

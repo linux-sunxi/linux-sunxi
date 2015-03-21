@@ -34,6 +34,10 @@
 #include <mach/gpio.h>
 #include <mach/irqs.h>
 #include <mach/clock.h>
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+#include <mach/includes.h>
+#include <plat/sys_config.h>         //Fix the GAMC cannot build as module
+#endif
 
 #include "sunxi_gmac.h"
 
@@ -43,17 +47,71 @@ static int gmac_system_init(struct gmac_priv *priv)
 	int ret = 0;
 
 #ifndef CONFIG_GMAC_SCRIPT_SYS
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+	int reg_value;
+	/* configure system io */
+	if(priv->gpiobase){
+		writel(0x22222222, priv->gpiobase + PA_CFG0);
+
+		writel(0x22222222, priv->gpiobase + PA_CFG1);
+
+		writel(0x00000022, priv->gpiobase + PA_CFG2);
+#else
 	if(priv->gpiobase){
 		writel(0x55555555, priv->gpiobase + PA_CFG0);
 		writel(0x50555505, priv->gpiobase + PA_CFG1);
 		writel(0x00000005, priv->gpiobase + PA_CFG2);
 	}
+#endif
+#else
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+	int i = 0;
+	int gpio_tmp;
+
+        priv->gpio_cnt = script_parser_mainkey_get_gpio_count("gmac_para");
+	priv->gpio_hd = kmalloc(sizeof(user_gpio_set_t)*priv->gpio_cnt, GFP_KERNEL);
+        printk("gmac_para gpio count is %d\n", priv->gpio_cnt);
+	script_parser_mainkey_get_gpio_cfg("gmac_para", priv->gpio_hd, priv->gpio_cnt);
+	for (i = 0; i < priv->gpio_cnt; i++){
+	    gpio_tmp = gpio_request_ex("gmac_para", priv->gpio_hd[i].gpio_name);
+	    if (gpio_tmp){
+                gpio_set_one_pin_status(gpio_tmp, &priv->gpio_hd[i], priv->gpio_hd[i].gpio_name, 1);
+	    }else{
+	        printk("gpio_set_one_pin_status error\n");
+	    }
+	}
+#ifdef GMAC_PHY_POWER
+    priv->gpio_power_hd= gpio_request_ex("gmac_phy_power", "gmac_phy_power_en");
+#endif
+gpio_err:
+	if(unlikely(ret)){
+	    gpio_free(priv->gpio_hd);
+		priv->gpio_hd = NULL;
+		priv->gpio_cnt = 0;
+	}
+#ifdef SUN7i_GMAC_FPGA
+	reg_value = readl(IO_ADDRESS(GPIO_BASE + 0x108));
+	reg_value |= 0x1<<20;
+	writel(reg_value, IO_ADDRESS(GPIO_BASE + 0x108));
+
+	reg_value = readl(IO_ADDRESS(GPIO_BASE + 0x10c));
+	reg_value &= ~(0x1<<29);
+	writel(reg_value, IO_ADDRESS(GPIO_BASE + 0x10c));
+
+	mdelay(200);
+
+	reg_value = readl(IO_ADDRESS(GPIO_BASE + 0x10c));
+	reg_value |= 0x1<<29;
+	writel(reg_value, IO_ADDRESS(GPIO_BASE + 0x10c));
+#endif
+
 #else
 	priv->gpio_handle = gpio_request_ex("gmac_para", NULL);
 	if(!priv->gpio_handle) {
 		pr_warning("twi0 request gpio fail!\n");
 		ret = -1;
 	}
+#endif
 #endif
 	return ret;
 }
@@ -177,7 +235,16 @@ static void gmac_sys_release(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	release_mem_region(res->start, resource_size(res));
 #else
-	gpio_release(priv->gpio_handle, 0);
+	#ifdef CONFIG_GMAC_FOR_BANANAPI
+		int i;
+		if (priv->gpio_hd){
+			gpio_free(priv->gpio_hd);
+			priv->gpio_hd = NULL;
+			priv->gpio_cnt = 0;
+		}
+	#else
+		gpio_release(priv->gpio_handle, 0);
+	#endif
 #endif
 
 	iounmap(priv->gmac_clk_reg);

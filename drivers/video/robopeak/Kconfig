@@ -1,0 +1,26 @@
+menuconfig FB_RPUSBDISP
+	tristate "Robopeak USB Display"
+        depends on FB && m
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select FB_SYS_FILLRECT
+	select FB_SYS_COPYAREA
+	select FB_SYS_IMAGEBLIT
+	select FB_SYS_FOPS
+	select FB_MODE_HELPER
+	select FB_DEFERRED_IO
+	help
+	  Frame buffer driver for RoboPeak usb display
+	  The module will be called rp_usbdisplay.
+
+config RPUSBDISP_FPS
+	int "display frame rate"
+	default 16
+	depends on FB_RPUSBDISP
+	help
+	  Specify the frame rate used by the FB_DEFERRED_IO to update
+	  the display content
+	  This value can be overridden by the modprobe
+	  with the fps parameter 
+

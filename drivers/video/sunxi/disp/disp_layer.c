@@ -92,9 +92,10 @@ __s32 img_sw_para_to_reg(__u8 type, __u8 mode, __u8 value)
 			   value == DISP_FORMAT_YUV444) {
 			return 4;
 		} else {
-			DE_WRN("not supported yuv channel format:%d in "
+			/*DE_WRN("not supported yuv channel format:%d in "
 			       "img_sw_para_to_reg\n", value);
 			return 0;
+            */
 		}
 	} else if (type == 1) { /* yuv channel pixel sequence */
 		if (mode == DISP_MOD_NON_MB_PLANAR && value == DISP_SEQ_P3210) {
@@ -120,10 +121,10 @@ __s32 img_sw_para_to_reg(__u8 type, __u8 mode, __u8 value)
 		} else if (mode == DISP_MOD_INTERLEAVED &&
 			   value == DISP_SEQ_VUYA) {
 			return 1;
-		} else {
+		} else {/*
 			DE_WRN("not supported yuv channel pixel sequence:%d "
 			       "in img_sw_para_to_reg\n", value);
-			return 0;
+			return 0;*/
 		}
 	} else if (type == 3) {	/* image0 pixel sequence */
 		if (value == DISP_SEQ_ARGB) {
@@ -162,14 +163,14 @@ __s32 img_sw_para_to_reg(__u8 type, __u8 mode, __u8 value)
 			return 2;
 		} else if (value == DISP_SEQ_1BPP_LITTER_LITTER) {
 			return 3;
-		} else {
+		} else {/*
 			DE_WRN("not supported image0 pixel sequence:%d in "
 			       "img_sw_para_to_reg\n", value);
-			return 0;
+			return 0;*/
 		}
 	}
 
-	DE_WRN("not supported type:%d in img_sw_para_to_reg\n", type);
+	//DE_WRN("not supported type:%d in img_sw_para_to_reg\n", type);
 	return 0;
 }
 

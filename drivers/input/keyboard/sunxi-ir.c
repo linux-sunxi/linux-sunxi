@@ -577,7 +577,20 @@ static int __init ir_init(void)
 {
 	int i, ret;
 	int err = 0;
-
+	int sunxi_ir_used = 0;
+	/* parse script.bin for main name [ir_para] to get sub-name ir_used */
+	
+	err = script_parser_fetch("ir_para", "ir_used", &sunxi_ir_used, sizeof(sunxi_ir_used)/sizeof(int));
+	if (err) {
+		/* Not error - just info */
+		pr_info("sunxi ir can't find script parameters '[ir_para]' and  'ir_used'\n");
+		return err;
+	}	
+	if (!sunxi_ir_used) {
+		pr_info("%s ir_used is false. Skip ir initialization\n", __func__);
+		err = 0;
+		return err;
+	}
 	ir_dev = input_allocate_device();
 	if (!ir_dev) {
 		printk(KERN_ERR "ir_dev: not enough memory for input device\n");
