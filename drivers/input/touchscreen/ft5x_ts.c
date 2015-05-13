@@ -650,7 +650,7 @@ typedef unsigned char         FTS_BOOL;    //8 bit
 
 #define I2C_CTPM_ADDRESS        (0x70>>1)
 
-void delay_ms(FTS_WORD  w_ms)
+void _delay_ms(FTS_WORD  w_ms)
 {
 	//platform related, please implement this function
 	msleep( w_ms );
@@ -879,14 +879,14 @@ E_UPGRADE_ERR_TYPE  fts_ctpm_fw_upgrade(u8* pbt_buf, u16 dw_lenth)
 
     /*********Step 1:Reset  CTPM *****/
     /*write 0xaa to register 0xfc*/
-    delay_ms(100);
+    _delay_ms(100);
     fts_register_write(0xfc,0xaa);
-    delay_ms(50);
+    _delay_ms(50);
      /*write 0x55 to register 0xfc*/
     fts_register_write(0xfc,0x55);
     pr_info("Step 1: Reset CTPM test\n");
 
-    delay_ms(30);
+    _delay_ms(30);
 
     /*********Step 2:Enter upgrade mode *****/
      auc_i2c_write_buf[0] = 0x55;
@@ -896,7 +896,7 @@ E_UPGRADE_ERR_TYPE  fts_ctpm_fw_upgrade(u8* pbt_buf, u16 dw_lenth)
         i++;
         i_ret = i2c_write_interface(I2C_CTPM_ADDRESS, auc_i2c_write_buf, 2);
         pr_info("Step 2: Enter update mode. \n");
-        delay_ms(5);
+        _delay_ms(5);
      }while((FTS_FALSE == i_ret) && i<5);
 
     /*********Step 3:check READ-ID***********************/
@@ -913,13 +913,13 @@ E_UPGRADE_ERR_TYPE  fts_ctpm_fw_upgrade(u8* pbt_buf, u16 dw_lenth)
         cmd_write(0x90,0x00,0x00,0x00,4);
         byte_read(reg_val,2);
         i++;
-        delay_ms(5);
+        _delay_ms(5);
         pr_info("Step 3: CTPM ID,ID1 = 0x%x,ID2 = 0x%x\n",reg_val[0],reg_val[1]);
     }while(reg_val[1] != 0x03);//while(reg_val[0] != 0x79 || reg_val[1] != 0x03);
 
      /*********Step 4:erase app*******************************/
     cmd_write(0x61,0x00,0x00,0x00,1);
-    delay_ms(1500);
+    _delay_ms(1500);
     pr_info("Step 4: erase. \n");
 
     /*********Step 5:write firmware(FW) to ctpm flash*********/
@@ -945,7 +945,7 @@ E_UPGRADE_ERR_TYPE  fts_ctpm_fw_upgrade(u8* pbt_buf, u16 dw_lenth)
         }
 
         byte_write(&packet_buf[0],FTS_PACKET_LENGTH + 6);
-        delay_ms(FTS_PACKET_LENGTH/6 + 1);
+        _delay_ms(FTS_PACKET_LENGTH/6 + 1);
         if ((j * FTS_PACKET_LENGTH % 1024) == 0)
         {
               pr_info("upgrade the 0x%x th byte.\n", ((unsigned int)j) * FTS_PACKET_LENGTH);
@@ -969,7 +969,7 @@ E_UPGRADE_ERR_TYPE  fts_ctpm_fw_upgrade(u8* pbt_buf, u16 dw_lenth)
         }
 
         byte_write(&packet_buf[0],temp+6);
-        delay_ms(20);
+        _delay_ms(20);
     }
 
     //send the last six byte
@@ -985,7 +985,7 @@ E_UPGRADE_ERR_TYPE  fts_ctpm_fw_upgrade(u8* pbt_buf, u16 dw_lenth)
         bt_ecc ^= packet_buf[6];
 
         byte_write(&packet_buf[0],7);
-        delay_ms(20);
+        _delay_ms(20);
     }
 
     /*********Step 6: read out checksum***********************/
@@ -1016,9 +1016,9 @@ int fts_ctpm_auto_clb(void)
     pr_info("[FTS] start auto CLB.\n");
     msleep(200);
     fts_register_write(0, 0x40);
-    delay_ms(100);                       //make sure already enter factory mode
+    _delay_ms(100);                       //make sure already enter factory mode
     fts_register_write(2, 0x4);               //write command to start calibration
-    delay_ms(300);
+    _delay_ms(300);
     for(i=0;i<100;i++)
     {
         fts_register_read(0,&uc_temp,1);
@@ -1026,7 +1026,7 @@ int fts_ctpm_auto_clb(void)
         {
             break;
         }
-        delay_ms(200);
+        _delay_ms(200);
         pr_info("[FTS] waiting calibration %d\n",i);
     }
 
@@ -1034,9 +1034,9 @@ int fts_ctpm_auto_clb(void)
 
     msleep(300);
     fts_register_write(0, 0x40);              //goto factory mode
-    delay_ms(100);                       //make sure already enter factory mode
+    _delay_ms(100);                       //make sure already enter factory mode
    fts_register_write(2, 0x5);               //store CLB result
-    delay_ms(300);
+    _delay_ms(300);
     fts_register_write(0, 0x0);               //return to normal mode
     msleep(300);
     pr_info("[FTS] store CLB result OK.\n");
