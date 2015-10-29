@@ -145,6 +145,7 @@ int script_parser_mainkey_get_gpio_count(char *main_name)
 
 	return gpio_count;
 }
+EXPORT_SYMBOL(script_parser_mainkey_get_gpio_count); //Fix the GAMC cannot build as module
 
 int script_parser_mainkey_get_gpio_cfg(char *main_name, void *gpio_cfg, int gpio_count)
 {
@@ -179,6 +180,7 @@ int script_parser_mainkey_get_gpio_cfg(char *main_name, void *gpio_cfg, int gpio
 
 	return SCRIPT_PARSER_KEY_NOT_FIND;
 }
+EXPORT_SYMBOL(script_parser_mainkey_get_gpio_cfg);  //Fix the GAMC cannot build as module
 
 /*
  *

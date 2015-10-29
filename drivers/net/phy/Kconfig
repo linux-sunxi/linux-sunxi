@@ -13,6 +13,12 @@ menuconfig PHYLIB
 
 if PHYLIB
 
+config SWCONFIG
+	tristate "Switch configuration API"
+	---help---
+	  Switch configuration API using netlink. This allows
+	  you to configure the VLAN features of certain switches.
+
 comment "MII PHY device drivers"
 
 config AMD_PHY
@@ -134,6 +140,8 @@ config MDIO_OCTEON
 	  It is required by the Octeon Ethernet device drivers.
 
 	  If in doubt, say Y.
+
+source "drivers/net/phy/b53/Kconfig"
 
 endif # PHYLIB
 

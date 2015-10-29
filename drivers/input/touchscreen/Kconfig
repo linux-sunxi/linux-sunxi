@@ -893,4 +893,10 @@ config  TOUCHSCREEN_COASIA
        tristate  "COASIA touchscreen driver"
        help
           COASIA touchscreen driver
+
+config ADS7846_DEVICE
+      tristate  "ADS7846 device support"
+      help
+	 register the ADS7846 device
+		from http://www.banana-pi.com/
 endif

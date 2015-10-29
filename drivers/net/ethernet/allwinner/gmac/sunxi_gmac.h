@@ -33,6 +33,9 @@
 #include "gmac_base.h"
 
 #define GMAC_RESOURCE_NAME	"sunxi_gmac"
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+	#define GMAC_PHY_POWER
+#endif
 
 enum rx_frame_status { /* IPC status */
 	good_frame = 0,
@@ -132,7 +135,11 @@ struct gmac_priv {
 	void __iomem *gpiobase;
 #else
 	int gpio_cnt;
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+	user_gpio_set_t *gpio_hd;
+#else
 	unsigned int gpio_handle;
+#endif
 
 #endif
 #ifndef CONFIG_GMAC_CLK_SYS
@@ -163,6 +170,9 @@ struct gmac_priv {
 	spinlock_t lock;
 	spinlock_t tx_lock;
 	struct gmac_plat_data *plat;
+#ifdef GMAC_PHY_POWER
+	u32 gpio_power_hd;
+#endif
 	//struct dma_features dma_cap;
 };
 

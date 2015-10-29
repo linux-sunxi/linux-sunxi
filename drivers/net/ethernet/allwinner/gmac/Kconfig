@@ -28,6 +28,13 @@ config GMAC_CLK_SYS
 	 It select the clock controler is system or the driver itself.
 	 If you want to use the system interface, select it. If not, the
 	 driver will control the clock by ioremap.
+	 
+config GMAC_FOR_BANANAPI
+	bool "modified gmac driver for Bananapi"
+	depends on SUNXI_GMAC
+	---help---
+	 If you want to compile the firmware for Bananapi, you should select it.
+	 The driver will be modified to be suit for the Bananapi' gmac.
 
 choice
 	prompt "Select the DMA TX/RX descriptor operating modes"

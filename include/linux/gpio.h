@@ -42,6 +42,9 @@ struct gpio {
 #include <linux/errno.h>
 #include <linux/bug.h>
 
+
+int devm_gpio_request_one(struct device *dev, unsigned gpio, unsigned long flags, const char *label);
+
 struct device;
 struct gpio_chip;
 

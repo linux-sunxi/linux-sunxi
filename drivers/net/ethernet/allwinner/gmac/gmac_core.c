@@ -50,6 +50,10 @@
 #include "gmac_desc.h"
 #include "gmac_ethtool.h"
 
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+#include <plat/platform.h>
+#endif
+
 #undef GMAC_DEBUG
 #ifdef GMAC_DEBUG
 #define DBG(nlevel, klevel, fmt, args...) \
@@ -217,6 +221,9 @@ static void gmac_clk_ctl(struct gmac_priv *priv, unsigned int flag)
 			|| phy_interface == PHY_INTERFACE_MODE_GMII)
 		priv_clk_reg |= 0x00000002;
 
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+	priv_clk_reg |= (0x00000003<<10);   
+#endif
 	writel(priv_clk_reg, priv->gmac_clk_reg + GMAC_CLK_REG);
 }
 
@@ -778,6 +785,28 @@ static void gmac_check_ether_addr(struct gmac_priv *priv)
 	/* verify if the MAC address is valid, in case of failures it
 	 * generates a random MAC address */
 	if (!is_valid_ether_addr(priv->ndev->dev_addr)) {
+#ifdef CONFIG_GMAC_FOR_BANANAPI
+		gmac_get_umac_addr((void __iomem *)
+					     priv->ndev->base_addr,
+					     priv->ndev->dev_addr, 0);
+		if  (!is_valid_ether_addr(priv->ndev->dev_addr)) {
+		    unsigned int reg_val;
+            reg_val = readl(SW_VA_SID_IO_BASE);
+            pr_info("gmac: use mac address from chipid\n");
+            priv->ndev->dev_addr[0] = 0x02; /* Non OUI / registered MAC address */
+            priv->ndev->dev_addr[1] = (reg_val >>  0) & 0xff;
+            reg_val = readl(SW_VA_SID_IO_BASE + 0x0c);
+            priv->ndev->dev_addr[2] = (reg_val >> 24) & 0xff;
+            priv->ndev->dev_addr[3] = (reg_val >> 16) & 0xff;
+            priv->ndev->dev_addr[4] = (reg_val >>  8) & 0xff;
+            priv->ndev->dev_addr[5] = (reg_val >>  0) & 0xff;
+
+            if  (!is_valid_ether_addr(priv->ndev->dev_addr)) {
+                random_ether_addr(priv->ndev->dev_addr);
+                pr_info("gmac: use random mac address\n");
+            }
+        }
+#else
 		if  (!is_valid_ether_addr(priv->ndev->dev_addr)) {
 			for (i=0; i<6; i++,p++)
 				priv->ndev->dev_addr[i] = simple_strtoul(p, &p, 16);
@@ -785,10 +814,39 @@ static void gmac_check_ether_addr(struct gmac_priv *priv)
 
 		if  (!is_valid_ether_addr(priv->ndev->dev_addr))
 			random_ether_addr(priv->ndev->dev_addr);
+#endif
 	}
 	printk(KERN_WARNING "%s: device MAC address %pM\n", priv->ndev->name,
 						   priv->ndev->dev_addr);
 }
+
+#ifdef GMAC_PHY_POWER
+void gmac_phy_power_en(struct gmac_priv *priv)
+{
+    if(!priv) return;
+
+    if (priv->gpio_power_hd){
+	    printk("GMAC gpio_power_hd:gpio_direction_output\n");
+		gpio_set_one_pin_io_status(priv->gpio_power_hd, 1, "gmac_phy_power_en");//set the gpio to output
+		gpio_write_one_pin_value(priv->gpio_power_hd, 1, "gmac_phy_power_en");
+	    mdelay(200);
+    }
+
+    return;
+}
+
+void gmac_phy_power_disable(struct gmac_priv *priv)
+{
+    if(!priv) return;
+
+    if (priv->gpio_power_hd){
+        gpio_write_one_pin_value(priv->gpio_power_hd, 0, "gmac_phy_power_en");
+    }
+
+    return;
+
+}
+#endif
 
 /**
  *  gmac_open - open entry point of the driver
@@ -804,9 +862,14 @@ static int gmac_open(struct net_device *ndev)
 	struct gmac_priv *priv = netdev_priv(ndev);
 	int ret;
 
-	gmac_clk_ctl(priv, 1);
-	//gmac_check_ether_addr(priv);
+#ifdef GMAC_PHY_POWER
+    gmac_phy_power_en(priv);
+#endif
 
+	gmac_clk_ctl(priv, 1);
+#ifdef GMAC_PHY_POWER
+	gmac_check_ether_addr(priv);
+#endif
 	/* MDIO bus Registration */
 	ret = gmac_mdio_register(ndev);
 	if (ret < 0) {
@@ -943,6 +1006,10 @@ static int gmac_release(struct net_device *ndev)
 #endif
 	gmac_mdio_unregister(ndev);
 	gmac_clk_ctl(priv, 0);
+
+#ifdef GMAC_PHY_POWER
+    gmac_phy_power_disable(priv);
+#endif
 
 	return 0;
 }
@@ -1722,6 +1789,9 @@ static int __init gmac_init(void)
 
 static void __exit gmac_remove(void)
 {
+#ifdef CONFIG_GMAC_SCRIPT_SYS
+	script_parser_fetch("gmac_para", "gmac_used", &gmac_used, 1);
+#endif
 	if (gmac_used != 1) {
 		pr_info("gmac is disabled\n");
 		return;

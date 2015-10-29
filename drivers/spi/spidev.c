@@ -241,7 +241,10 @@ static int spidev_message(struct spidev_data *spidev,
 		k_tmp->len = u_tmp->len;
 
 		total += k_tmp->len;
-		if (total > bufsiz) {
+		/* Check total length of transfers.  Also check each
+		 * transfer length to avoid arithmetic overflow.
+		 */
+		if (total > bufsiz || k_tmp->len > bufsiz) {
 			status = -EMSGSIZE;
 			goto done;
 		}
@@ -265,7 +268,7 @@ static int spidev_message(struct spidev_data *spidev,
 		k_tmp->cs_change = !!u_tmp->cs_change;
 		k_tmp->bits_per_word = u_tmp->bits_per_word;
 		k_tmp->delay_usecs = u_tmp->delay_usecs;
-		k_tmp->interbyte_usecs = u_tmp->interbyte_usecs;
+//		k_tmp->interbyte_usecs = u_tmp->interbyte_usecs;
 		k_tmp->speed_hz = u_tmp->speed_hz;
 #ifdef VERBOSE
 		dev_dbg(&spidev->spi->dev,
@@ -276,7 +279,7 @@ static int spidev_message(struct spidev_data *spidev,
 			u_tmp->cs_change ? "cs " : "",
 			u_tmp->bits_per_word ? : spidev->spi->bits_per_word,
 			u_tmp->delay_usecs,
-			u_tmp->interbyte_usecs,
+//			u_tmp->interbyte_usecs,
 			u_tmp->speed_hz ? : spidev->spi->max_speed_hz);
 #endif
 		spi_message_add_tail(k_tmp, &msg);

@@ -27,6 +27,8 @@ source "drivers/gpu/ion/Kconfig"
 
 source "drivers/gpu/mali/Kconfig"
 
+source "drivers/video/fbtft/Kconfig"
+
 config VGASTATE
        tristate
        default n
@@ -262,6 +264,7 @@ config FB_TILEBLITTING
 
 comment "Frame buffer hardware drivers"
 	depends on FB
+source "drivers/video/robopeak/Kconfig"
 
 config FB_GRVGA
 	tristate "Aeroflex Gaisler framebuffer support"

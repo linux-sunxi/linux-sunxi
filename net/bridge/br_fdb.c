@@ -440,7 +440,7 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 			fdb->updated = jiffies;
 		}
 	} else {
-		spin_lock(&br->hash_lock);
+		spin_lock_bh(&br->hash_lock);
 		if (likely(!fdb_find(head, addr))) {
 			fdb = fdb_create(head, source, addr);
 			if (fdb)
@@ -449,7 +449,7 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 		/* else  we lose race and someone else inserts
 		 * it first, don't bother updating
 		 */
-		spin_unlock(&br->hash_lock);
+		spin_unlock_bh(&br->hash_lock);
 	}
 }
 
@@ -665,9 +665,11 @@ int br_fdb_add(struct sk_buff *skb, struct nlmsghdr *nlh, void *arg)
 	}
 
 	if (ndm->ndm_flags & NTF_USE) {
+		local_bh_disable();
 		rcu_read_lock();
 		br_fdb_update(p->br, p, addr);
 		rcu_read_unlock();
+		local_bh_enable();
 	} else {
 		spin_lock_bh(&p->br->hash_lock);
 		err = fdb_add_entry(p, addr, ndm->ndm_state, nlh->nlmsg_flags);
