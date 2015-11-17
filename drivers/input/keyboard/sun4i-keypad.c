@@ -400,12 +400,12 @@ static int __devinit sw_keypad_probe(struct platform_device *pdev)
 	}
     disable_irq(keypad->irq);
 
+	platform_set_drvdata(pdev, keypad);
+	keypad->pdev = pdev;
+
 	error = input_register_device(keypad->input_dev);
 	if (error)
 		goto err_free_irq;
-
-	platform_set_drvdata(pdev, keypad);
-	keypad->pdev = pdev;
 
 	swkp_msg("sw keypad probe done, base %p, irq %d\n", keypad->base, keypad->irq);
 	return 0;
@@ -528,7 +528,7 @@ static int __init sw_keypad_init(void)
 
     swkp_msg("sw keypad init\n");
     kp_used  = 0;
-    ret = script_parser_fetch("keypad_para", "ke_used", &kp_used, sizeof(int));
+    ret = script_parser_fetch("keypad_para", "kp_used", &kp_used, sizeof(int));
     if (ret)
     {
         printk("sw keypad fetch keypad uning configuration failed\n");
