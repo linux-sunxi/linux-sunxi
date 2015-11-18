@@ -383,11 +383,7 @@ static int codec_play_open(struct snd_pcm_substream *substream)
 
 static int codec_capture_open(void)
 {
-	 //enable mic1 pa
-	 codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x1);
-	 //mic1 gain 32dB
-	 codec_wr_control(SUNXI_ADC_ACTL, 0x3,25,0x1);
-	  //enable VMIC
+	 //enable VMIC
 	 codec_wr_control(SUNXI_ADC_ACTL, 0x1, VMIC_EN, 0x1);
 
 	if (sunxi_is_sun7i()) {
@@ -448,8 +444,6 @@ static int codec_capture_stop(void)
 {
 	//disable adc drq
 	codec_wr_control(SUNXI_ADC_FIFOC ,0x1, ADC_DRQ, 0x0);
-	//enable mic1 pa
-	codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x0);
 
 	//enable VMIC
 	codec_wr_control(SUNXI_ADC_ACTL, 0x1, VMIC_EN, 0x0);
@@ -517,8 +511,8 @@ static const struct snd_kcontrol_new codec_adc_controls[] = {
 	CODEC_SINGLE("Line Capture Volume",SUNXI_ADC_ACTL,13,7,0),
 	CODEC_SINGLE("MicL Volume",SUNXI_ADC_ACTL,25,3,0),//mic左音量
 	CODEC_SINGLE("MicR Volume",SUNXI_ADC_ACTL,23,3,0),//mic右音量
-	CODEC_SINGLE("Mic2 Boost",SUNXI_ADC_ACTL,29,1,0),
-	CODEC_SINGLE("Mic1 Boost",SUNXI_ADC_ACTL,28,1,0),
+	CODEC_SINGLE("Mic2 Boost",SUNXI_ADC_ACTL,MIC2_EN,1,0),
+	CODEC_SINGLE("Mic1 Boost",SUNXI_ADC_ACTL,MIC1_EN,1,0),
 	CODEC_SINGLE("Mic Power",SUNXI_ADC_ACTL,27,1,0),
 	CODEC_SINGLE("ADC Input Mux",SUNXI_ADC_ACTL,17,7,0),//ADC输入静音
 };
@@ -564,8 +558,8 @@ static const struct snd_kcontrol_new sun7i_adc_ctls[] = {
 	 */
 	CODEC_SINGLE("MicL Volume",SUNXI_ADC_ACTL,25,3,0),//mic左音量
 	CODEC_SINGLE("MicR Volume",SUNXI_ADC_ACTL,23,3,0),//mic右音量
-	CODEC_SINGLE("Mic2 Boost",SUNXI_ADC_ACTL,29,1,0),
-	CODEC_SINGLE("Mic1 Boost",SUNXI_ADC_ACTL,28,1,0),
+	CODEC_SINGLE("Mic2 Boost",SUNXI_ADC_ACTL,28,1,0),
+	CODEC_SINGLE("Mic1 Boost",SUNXI_ADC_ACTL,29,1,0),
 	CODEC_SINGLE("Mic Power",SUNXI_ADC_ACTL,27,1,0),
 	CODEC_SINGLE("ADC Input Mux",SUNXI_ADC_ACTL,17,7,0),//ADC输入静音
 	CODEC_SINGLE("Mic2 gain Volume", SUNXI_MIC_CRT, 26, 7, 0),
@@ -573,7 +567,7 @@ static const struct snd_kcontrol_new sun7i_adc_ctls[] = {
 	 *	MIC1 pre-amplifier Gain Control
 	 *	00:0db,01:35db,10:38db,11:41db
 	 */
-	CODEC_SINGLE("Mic1 gain Volume", SUNXI_MIC_CRT, 29, 3, 0),
+	CODEC_SINGLE("Mic1 gain Volume", SUNXI_MIC_CRT, 29, 7, 0),
 };
 
 int __devinit snd_chip_codec_mixer_new(struct snd_card *card)
