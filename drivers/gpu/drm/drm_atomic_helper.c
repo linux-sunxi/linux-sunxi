@@ -984,7 +984,17 @@ void drm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_atomic_helper_commit_modeset_enables);
 
-static void wait_for_fences(struct drm_device *dev,
+/**
+ * drm_atomic_helper_wait_for_fences - wait for fences stashed in plane state
+ * @dev: DRM device
+ * @state: atomic state object with old state structures
+ *
+ * For implicit sync, driver should fish the exclusive fence out from the
+ * incoming fb's and stash it in the drm_plane_state.  This is called after
+ * drm_atomic_helper_swap_state() so it uses the current plane state (and
+ * just uses the atomic state to find the changed planes)
+ */
+void drm_atomic_helper_wait_for_fences(struct drm_device *dev,
 			    struct drm_atomic_state *state)
 {
 	struct drm_plane *plane;
@@ -1002,6 +1012,7 @@ static void wait_for_fences(struct drm_device *dev,
 		plane->state->fence = NULL;
 	}
 }
+EXPORT_SYMBOL(drm_atomic_helper_wait_for_fences);
 
 /**
  * drm_atomic_helper_framebuffer_changed - check if framebuffer has changed
@@ -1092,6 +1103,8 @@ drm_atomic_helper_wait_for_vblanks(struct drm_device *dev,
 					drm_crtc_vblank_count(crtc),
 				msecs_to_jiffies(50));
 
+		WARN(!ret, "[CRTC:%d] vblank wait timed out\n", crtc->base.id);
+
 		drm_crtc_vblank_put(crtc);
 	}
 }
@@ -1163,7 +1176,7 @@ int drm_atomic_helper_commit(struct drm_device *dev,
 	 * current layout.
 	 */
 
-	wait_for_fences(dev, state);
+	drm_atomic_helper_wait_for_fences(dev, state);
 
 	drm_atomic_helper_commit_modeset_disables(dev, state);
 
@@ -2497,12 +2510,9 @@ EXPORT_SYMBOL(drm_atomic_helper_connector_dpms);
  */
 void drm_atomic_helper_crtc_reset(struct drm_crtc *crtc)
 {
-	if (crtc->state) {
-		drm_property_unreference_blob(crtc->state->mode_blob);
-		drm_property_unreference_blob(crtc->state->degamma_lut);
-		drm_property_unreference_blob(crtc->state->ctm);
-		drm_property_unreference_blob(crtc->state->gamma_lut);
-	}
+	if (crtc->state)
+		__drm_atomic_helper_crtc_destroy_state(crtc, crtc->state);
+
 	kfree(crtc->state);
 	crtc->state = kzalloc(sizeof(*crtc->state), GFP_KERNEL);
 
@@ -2608,8 +2618,8 @@ EXPORT_SYMBOL(drm_atomic_helper_crtc_destroy_state);
  */
 void drm_atomic_helper_plane_reset(struct drm_plane *plane)
 {
-	if (plane->state && plane->state->fb)
-		drm_framebuffer_unreference(plane->state->fb);
+	if (plane->state)
+		__drm_atomic_helper_plane_destroy_state(plane, plane->state);
 
 	kfree(plane->state);
 	plane->state = kzalloc(sizeof(*plane->state), GFP_KERNEL);
@@ -2729,6 +2739,10 @@ void drm_atomic_helper_connector_reset(struct drm_connector *connector)
 {
 	struct drm_connector_state *conn_state =
 		kzalloc(sizeof(*conn_state), GFP_KERNEL);
+
+	if (connector->state)
+		__drm_atomic_helper_connector_destroy_state(connector,
+							    connector->state);
 
 	kfree(connector->state);
 	__drm_atomic_helper_connector_reset(connector, conn_state);

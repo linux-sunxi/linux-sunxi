@@ -66,6 +66,11 @@ static struct drm_driver driver;
 #define IVB_CURSOR_OFFSETS \
 	.cursor_offsets = { CURSOR_A_OFFSET, IVB_CURSOR_B_OFFSET, IVB_CURSOR_C_OFFSET }
 
+#define BDW_COLORS \
+	.color = { .degamma_lut_size = 512, .gamma_lut_size = 512 }
+#define CHV_COLORS \
+	.color = { .degamma_lut_size = 65, .gamma_lut_size = 257 }
+
 static const struct intel_device_info intel_i830_info = {
 	.gen = 2, .is_mobile = 1, .cursor_needs_physical = 1, .num_pipes = 2,
 	.has_overlay = 1, .overlay_needs_physical = 1,
@@ -288,24 +293,28 @@ static const struct intel_device_info intel_haswell_m_info = {
 	.is_mobile = 1,
 };
 
+#define BDW_FEATURES \
+	HSW_FEATURES, \
+	BDW_COLORS
+
 static const struct intel_device_info intel_broadwell_d_info = {
-	HSW_FEATURES,
+	BDW_FEATURES,
 	.gen = 8,
 };
 
 static const struct intel_device_info intel_broadwell_m_info = {
-	HSW_FEATURES,
+	BDW_FEATURES,
 	.gen = 8, .is_mobile = 1,
 };
 
 static const struct intel_device_info intel_broadwell_gt3d_info = {
-	HSW_FEATURES,
+	BDW_FEATURES,
 	.gen = 8,
 	.ring_mask = RENDER_RING | BSD_RING | BLT_RING | VEBOX_RING | BSD2_RING,
 };
 
 static const struct intel_device_info intel_broadwell_gt3m_info = {
-	HSW_FEATURES,
+	BDW_FEATURES,
 	.gen = 8, .is_mobile = 1,
 	.ring_mask = RENDER_RING | BSD_RING | BLT_RING | VEBOX_RING | BSD2_RING,
 };
@@ -318,16 +327,17 @@ static const struct intel_device_info intel_cherryview_info = {
 	.display_mmio_offset = VLV_DISPLAY_BASE,
 	GEN_CHV_PIPEOFFSETS,
 	CURSOR_OFFSETS,
+	CHV_COLORS,
 };
 
 static const struct intel_device_info intel_skylake_info = {
-	HSW_FEATURES,
+	BDW_FEATURES,
 	.is_skylake = 1,
 	.gen = 9,
 };
 
 static const struct intel_device_info intel_skylake_gt3_info = {
-	HSW_FEATURES,
+	BDW_FEATURES,
 	.is_skylake = 1,
 	.gen = 9,
 	.ring_mask = RENDER_RING | BSD_RING | BLT_RING | VEBOX_RING | BSD2_RING,
@@ -345,18 +355,17 @@ static const struct intel_device_info intel_broxton_info = {
 	.has_fbc = 1,
 	GEN_DEFAULT_PIPEOFFSETS,
 	IVB_CURSOR_OFFSETS,
+	BDW_COLORS,
 };
 
 static const struct intel_device_info intel_kabylake_info = {
-	HSW_FEATURES,
-	.is_preliminary = 1,
+	BDW_FEATURES,
 	.is_kabylake = 1,
 	.gen = 9,
 };
 
 static const struct intel_device_info intel_kabylake_gt3_info = {
-	HSW_FEATURES,
-	.is_preliminary = 1,
+	BDW_FEATURES,
 	.is_kabylake = 1,
 	.gen = 9,
 	.ring_mask = RENDER_RING | BSD_RING | BLT_RING | VEBOX_RING | BSD2_RING,
@@ -504,6 +513,7 @@ void intel_detect_pch(struct drm_device *dev)
 				WARN_ON(!IS_SKYLAKE(dev) &&
 					!IS_KABYLAKE(dev));
 			} else if ((id == INTEL_PCH_P2X_DEVICE_ID_TYPE) ||
+				   (id == INTEL_PCH_P3X_DEVICE_ID_TYPE) ||
 				   ((id == INTEL_PCH_QEMU_DEVICE_ID_TYPE) &&
 				    pch->subsystem_vendor == 0x1af4 &&
 				    pch->subsystem_device == 0x1100)) {
@@ -881,7 +891,7 @@ int i915_reset(struct drm_device *dev)
 
 	simulated = dev_priv->gpu_error.stop_rings != 0;
 
-	ret = intel_gpu_reset(dev);
+	ret = intel_gpu_reset(dev, ALL_ENGINES);
 
 	/* Also reset the gpu hangman. */
 	if (simulated) {
@@ -1390,7 +1400,7 @@ static int vlv_suspend_complete(struct drm_i915_private *dev_priv)
 	if (err)
 		goto err2;
 
-	if (!IS_CHERRYVIEW(dev_priv->dev))
+	if (!IS_CHERRYVIEW(dev_priv))
 		vlv_save_gunit_s0ix_state(dev_priv);
 
 	err = vlv_force_gfx_clock(dev_priv, false);
@@ -1422,7 +1432,7 @@ static int vlv_resume_prepare(struct drm_i915_private *dev_priv,
 	 */
 	ret = vlv_force_gfx_clock(dev_priv, true);
 
-	if (!IS_CHERRYVIEW(dev_priv->dev))
+	if (!IS_CHERRYVIEW(dev_priv))
 		vlv_restore_gunit_s0ix_state(dev_priv);
 
 	err = vlv_allow_gt_wake(dev_priv, true);
@@ -1742,10 +1752,8 @@ static int __init i915_init(void)
 	if (i915.modeset == 0)
 		driver.driver_features &= ~DRIVER_MODESET;
 
-#ifdef CONFIG_VGA_CONSOLE
 	if (vgacon_text_force() && i915.modeset == -1)
 		driver.driver_features &= ~DRIVER_MODESET;
-#endif
 
 	if (!(driver.driver_features & DRIVER_MODESET)) {
 		/* Silently fail loading to not upset userspace. */
