@@ -134,7 +134,7 @@ config MFD_CROS_EC
 	select MFD_CORE
 	select CHROME_PLATFORMS
 	select CROS_EC_PROTO
-	depends on X86 || ARM || COMPILE_TEST
+	depends on X86 || ARM || ARM64 || COMPILE_TEST
 	help
 	  If you say Y here you get support for the ChromeOS Embedded
 	  Controller (EC) providing keyboard, battery and power services.
@@ -543,8 +543,8 @@ config MFD_MAX77686
 	  of the device.
 
 config MFD_MAX77693
-	bool "Maxim Semiconductor MAX77693 PMIC Support"
-	depends on I2C=y
+	tristate "Maxim Semiconductor MAX77693 PMIC Support"
+	depends on I2C
 	select MFD_CORE
 	select REGMAP_I2C
 	select REGMAP_IRQ
