@@ -126,8 +126,8 @@ static void __init sun4i_a10_display_init(struct device_node *node,
 		return;
 	}
 
-	ret = of_clk_parent_fill(node, parents, ARRAY_SIZE(parents));
-	if (ret != ARRAY_SIZE(parents)) {
+	ret = of_clk_parent_fill(node, parents, data->parents);
+	if (ret != data->parents) {
 		pr_err("%s: Could not retrieve the parents\n", clk_name);
 		goto unmap;
 	}
