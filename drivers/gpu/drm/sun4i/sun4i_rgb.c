@@ -151,6 +151,7 @@ static void sun4i_rgb_encoder_enable(struct drm_encoder *encoder)
 
 	DRM_DEBUG_DRIVER("Enabling RGB output\n");
 
+	drm_panel_prepare(tcon->panel);
 	drm_panel_enable(tcon->panel);
 	sun4i_tcon_channel_enable(tcon, 0);
 }
@@ -165,6 +166,7 @@ static void sun4i_rgb_encoder_disable(struct drm_encoder *encoder)
 
 	sun4i_tcon_channel_disable(tcon, 0);
 	drm_panel_disable(tcon->panel);
+	drm_panel_unprepare(tcon->panel);
 }
 
 static void sun4i_rgb_encoder_mode_set(struct drm_encoder *encoder,
