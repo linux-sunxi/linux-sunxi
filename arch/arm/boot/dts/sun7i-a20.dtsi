@@ -703,6 +703,15 @@
 
 		};
 
+		mali_clk: clk@01c20154 {
+			#clock-cells = <0>;
+			#reset-cells = <0>;
+			compatible = "allwinner,sun4i-a10-gpu-clk";
+			reg = <0x01c20154 0x4>;
+			clocks = <&pll3>, <&pll4>, <&pll5 1>, <&pll7>, <&pll7x2>;
+			clock-output-names = "mali";
+		};
+
 		ve_clk: clk@01c2013c {
 			#clock-cells = <0>;
 			#reset-cells = <0>;
