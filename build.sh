@@ -6,7 +6,7 @@ MODULE=""
 
 show_help()
 {
-	printf "\nbuild.sh - Top level build scritps\n"
+	printf "\nbuild.sh - Top level build script\n"
 	echo "Valid Options:"
 	echo "  -h  Show help message"
 	echo "  -p <platform> platform, e.g. sun4i, sun4i-lite, sun4i_crane"
