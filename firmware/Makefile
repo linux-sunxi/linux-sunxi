@@ -109,6 +109,10 @@ fw-shipped-$(CONFIG_USB_EMI62) += emi62/loader.fw emi62/bitstream.fw \
 fw-shipped-$(CONFIG_USB_KAWETH) += kaweth/new_code.bin kaweth/trigger_code.bin \
 				   kaweth/new_code_fix.bin \
 				   kaweth/trigger_code_fix.bin
+fw-shipped-$(CONFIG_AP6210) += ap6210/bcm20710a1.hcd ap6210/fw_bcm40181a2.bin \
+			       ap6210/fw_bcm40181a2_apsta.bin \
+			       ap6210/fw_bcm40181a2_p2p.bin \
+			       ap6210/nvram_ap6210.txt
 ifdef CONFIG_FIRMWARE_IN_KERNEL
 fw-shipped-$(CONFIG_USB_SERIAL_KEYSPAN_MPR) += keyspan/mpr.fw
 fw-shipped-$(CONFIG_USB_SERIAL_KEYSPAN_USA18X) += keyspan/usa18x.fw
