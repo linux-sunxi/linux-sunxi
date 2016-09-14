@@ -326,6 +326,7 @@ static struct fb_ops drm_fbdev_cma_ops = {
 	.fb_pan_display	= drm_fb_helper_pan_display,
 	.fb_setcmap	= drm_fb_helper_setcmap,
 	.fb_mmap	= drm_fb_cma_mmap,
+	.fb_ioctl	= drm_fb_helper_ioctl,
 };
 
 static int drm_fbdev_cma_deferred_io_mmap(struct fb_info *info,
