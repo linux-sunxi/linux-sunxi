@@ -50,6 +50,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/sun4i-a10.h>
+#include <dt-bindings/pwm/pwm.h>
 
 / {
 	model = "Olimex A20-Olinuxino Micro";
@@ -61,6 +62,13 @@
 		serial2 = &uart7;
 		spi0 = &spi1;
 		spi1 = &spi2;
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm 0 10000 PWM_POLARITY_INVERTED>;
+		brightness-levels = <0 10 20 30 40 50 60 70 80 90 100>;
+		default-brightness-level = <8>;
 	};
 
 	chosen {
@@ -81,6 +89,7 @@
 
 	panel: panel {
 		compatible = "olimex,lcd-olinuxino-43-ts";
+		backlight = <&backlight>;
 		enable-gpios = <&pio 7 8 GPIO_ACTIVE_HIGH>; /* PH8 */
 		pinctrl-names = "default";
 		pinctrl-0 = <&lcd_enable_pin &lcd_rgb888_pins>;
@@ -400,6 +409,12 @@
 		allwinner,drive = <SUN4I_PINCTRL_10_MA>;
 		allwinner,pull = <SUN4I_PINCTRL_PULL_DOWN>;
 	};
+};
+
+&pwm {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_pins_a>;
+	status = "okay";
 };
 
 &reg_ahci_5v {
