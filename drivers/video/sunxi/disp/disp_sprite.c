@@ -646,7 +646,7 @@ __s32 BSP_disp_sprite_block_release(__u32 sel, __s32 hid)
 			para.src_win.x = pre_node->data->src_win.x;
 			para.src_win.y = pre_node->data->src_win.y;
 			para.scn_win.x = pre_node->data->scn_win.x;
-			if (node->data->enable == FALSE)
+			if (pre_node->data->enable == FALSE)
 				para.scn_win.y = -2000;
 			else
 				para.scn_win.y = pre_node->data->scn_win.y;
