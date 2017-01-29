@@ -109,6 +109,12 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins_a>;
 	status = "okay";
+};
+
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_pins_a>;
+	status = "okay";
 
 	axp209: pmic@34 {
 		compatible = "x-powers,axp209";
@@ -119,12 +125,6 @@
 		interrupt-controller;
 		#interrupt-cells = <1>;
 	};
-};
-
-&i2c1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c1_pins_a>;
-	status = "okay";
 
 	eeprom: eeprom@50 {
 		compatible = "atmel,24c16";
