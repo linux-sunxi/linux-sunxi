@@ -69,8 +69,11 @@
 #define SUN4I_TCON0_TTL3_REG			0x7c
 #define SUN4I_TCON0_TTL4_REG			0x80
 #define SUN4I_TCON0_LVDS_IF_REG			0x84
+#define SUN4I_TCON0_LVDS_IF_ENABLE			BIT(31)
+#define SUN4I_TCON0_LVDS_IF_BITWIDTH			BIT(26)
 #define SUN4I_TCON0_IO_POL_REG			0x88
 #define SUN4I_TCON0_IO_POL_DCLK_PHASE(phase)		((phase & 3) << 28)
+#define SUN4I_TCON0_IO_POL_DCLK_PHASE_MASK		(3 << 28)
 #define SUN4I_TCON0_IO_POL_HSYNC_POSITIVE		BIT(25)
 #define SUN4I_TCON0_IO_POL_VSYNC_POSITIVE		BIT(24)
 
@@ -128,6 +131,18 @@
 #define SUN4I_TCON_CEU_RANGE_G_REG		0x144
 #define SUN4I_TCON_CEU_RANGE_B_REG		0x148
 #define SUN4I_TCON_MUX_CTRL_REG			0x200
+#define SUN4I_TCON0_LVDS_ANA0_REG		0x220
+#define SUN4I_TCON0_LVDS_ANA0_CK_EN			BIT(29) | BIT(28)
+#define SUN4I_TCON0_LVDS_ANA0_REG_V			BIT(27) | BIT(26)
+/* TODO: BIT(23) also belongs to ANA0_REG_C register set */
+#define SUN4I_TCON0_LVDS_ANA0_REG_C			BIT(25) | BIT(24)
+#define SUN4I_TCON0_LVDS_ANA0_EN_MB			BIT(22)
+/* TODO: BIT(19) also belongs to ANA0_PD register set */
+#define SUN4I_TCON0_LVDS_ANA0_PD			BIT(21) | BIT(20)
+#define SUN4I_TCON0_LVDS_ANA0_DCHS			BIT(16)
+#define SUN4I_TCON0_LVDS_ANA1_REG		0x224
+#define SUN4I_TCON0_LVDS_ANA1_INIT			(0x1f << 26 | 0x1f << 10)
+#define SUN4I_TCON0_LVDS_ANA1_UPDATE			(0x1f << 16 | 0x1f << 00)
 #define SUN4I_TCON1_FILL_CTL_REG		0x300
 #define SUN4I_TCON1_FILL_BEG0_REG		0x304
 #define SUN4I_TCON1_FILL_END0_REG		0x308
@@ -164,11 +179,13 @@ struct sun4i_tcon {
 
 	/* Reset control */
 	struct reset_control		*lcd_rst;
+	struct reset_control		*lvds_rst;
 
 	struct drm_panel		*panel;
 
 	/* Platform adjustments */
 	const struct sun4i_tcon_quirks	*quirks;
+	bool				has_lvds;
 };
 
 struct drm_bridge *sun4i_tcon_find_bridge(struct device_node *node);
@@ -188,7 +205,8 @@ void sun4i_tcon_enable_vblank(struct sun4i_tcon *tcon, bool enable);
 void sun4i_tcon_switch_interlace(struct sun4i_tcon *tcon,
 				 bool enable);
 void sun4i_tcon0_mode_set(struct sun4i_tcon *tcon,
-			  struct drm_display_mode *mode);
+			  struct drm_display_mode *mode,
+			  int type);
 void sun4i_tcon1_mode_set(struct sun4i_tcon *tcon,
 			  struct drm_display_mode *mode);
 

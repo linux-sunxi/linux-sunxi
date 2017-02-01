@@ -43,6 +43,9 @@ Required properties:
  - reset-names: the reset names mentioned above
  - clock-output-names: Name of the pixel clock created
 
+- mode: Defines which encoder will be enabled. Values are 'rgb', 'lvds'.
+  Defaults to 'rgb' if not set.
+
 - ports: A ports node with endpoint definitions as defined in
   Documentation/devicetree/bindings/media/video-interfaces.txt. The
   first port should be the input endpoint, the second one the output
