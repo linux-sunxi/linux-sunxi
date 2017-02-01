@@ -1353,6 +1353,30 @@ static const struct panel_desc olimex_lcd_olinuxino_43ts = {
 	.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
 };
 
+static const struct drm_display_mode olimex_lcd_dlc0700ddg_ts_mode = {
+	.clock = 33000,
+	.hdisplay = 800,
+	.hsync_start = 824,
+	.hsync_end = 896,
+	.htotal = 992,
+	.vdisplay = 480,
+	.vsync_start = 483,
+	.vsync_end = 493,
+	.vtotal = 500,
+	.vrefresh = 60,
+	.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+};
+
+static const struct panel_desc olimex_lcd_dlc0700ddg_ts = {
+	.modes = &olimex_lcd_dlc0700ddg_ts_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 152,
+		.height = 91,
+	},
+	.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+};
 /*
  * 800x480 CVT. The panel appears to be quite accepting, at least as far as
  * pixel clocks, but this is the timing that was being used in the Adafruit
@@ -1834,6 +1858,9 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "olimex,lcd-olinuxino-43-ts",
 		.data = &olimex_lcd_olinuxino_43ts,
+	}, {
+		.compatible = "olimex,lcd-dlc0700ddg-ts",
+		.data = &olimex_lcd_dlc0700ddg_ts,
 	}, {
 		.compatible = "ontat,yx700wv03",
 		.data = &ontat_yx700wv03,

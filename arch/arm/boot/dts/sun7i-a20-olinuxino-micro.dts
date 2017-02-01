@@ -88,7 +88,7 @@
 	};
 
 	panel: panel {
-		compatible = "olimex,lcd-olinuxino-43-ts";
+		compatible = "olimex,lcd-dlc0700ddg-ts";
 		backlight = <&backlight>;
 		enable-gpios = <&pio 7 8 GPIO_ACTIVE_HIGH>; /* PH8 */
 		pinctrl-names = "default";
