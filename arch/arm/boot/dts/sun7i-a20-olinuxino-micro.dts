@@ -50,6 +50,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/sun4i-a10.h>
+#include <dt-bindings/pwm/pwm.h>
 
 / {
 	model = "Olimex A20-Olinuxino Micro";
@@ -61,6 +62,13 @@
 		serial2 = &uart7;
 		spi0 = &spi1;
 		spi1 = &spi2;
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm 0 10000 PWM_POLARITY_INVERTED>;
+		brightness-levels = <0 10 20 30 40 50 60 70 80 90 100>;
+		default-brightness-level = <8>;
 	};
 
 	chosen {
@@ -77,6 +85,135 @@
 			gpios = <&pio 7 2 GPIO_ACTIVE_HIGH>;
 			default-state = "on";
 		};
+	};
+
+	panel: panel {
+		compatible = "olimex,lcd-dlc0700ddg-ts";
+		backlight = <&backlight>;
+		enable-gpios = <&pio 7 8 GPIO_ACTIVE_HIGH>; /* PH8 */
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd_enable_pin &lcd_rgb888_pins>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			panel_input: endpoint {
+				remote-endpoint = <&tcon0_out_panel>;
+			};
+		};
+	};
+
+	tcon0: lcd-controller@1c0c000 {
+		compatible = "allwinner,sun5i-a13-tcon";
+		reg = <0x01c0c000 0x1000>;
+		interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
+		resets = <&tcon0_ch0_clk 1>;
+		reset-names = "lcd";
+		clocks = <&ahb_gates 36>,
+		         <&tcon0_ch0_clk>,
+		         <&tcon0_ch1_clk>;
+		clock-names = "ahb",
+		              "tcon-ch0",
+		              "tcon-ch1";
+		clock-output-names = "tcon-pixel-clock";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			tcon0_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+
+				tcon0_in_be0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&be0_out_tcon0>;
+				};
+			};
+
+			tcon0_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+
+				tcon0_out_panel: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&panel_input>;
+				};
+			};
+		};
+	};
+
+	fe0: display-frontend@1e00000 {
+		compatible = "allwinner,sun5i-a13-display-frontend";
+		reg = <0x01e00000 0x20000>;
+		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ahb_gates 46>, <&de_fe0_clk>,
+		         <&dram_gates 25>;
+		clock-names = "ahb", "mod",
+		              "ram";
+		resets = <&de_fe0_clk>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			fe0_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+
+				fe0_out_be0: endpoint {
+					remote-endpoint = <&be0_in_fe0>;
+				};
+			};
+		};
+	};
+
+	be0: display-backend@1e60000 {
+		compatible = "allwinner,sun5i-a13-display-backend";
+		reg = <0x01e60000 0x10000>;
+		clocks = <&ahb_gates 44>, <&de_be0_clk>,
+		         <&dram_gates 26>;
+		clock-names = "ahb", "mod",
+		              "ram";
+		resets = <&de_be0_clk>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			be0_in: port@0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0>;
+
+				be0_in_fe0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&fe0_out_be0>;
+				};
+			};
+
+			be0_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+
+				be0_out_tcon0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&tcon0_in_be0>;
+				};
+			};
+		};
+	};
+
+	display-engine {
+		compatible = "allwinner,sun5i-a13-display-engine";
+		allwinner,pipelines = <&fe0>;
 	};
 };
 
@@ -226,6 +363,25 @@
 };
 
 &pio {
+	lcd_enable_pin: lcd_enable_pin@0 {
+		allwinner,pins = "PH8";
+		allwinner,function = "gpio_out";
+		allwinner,drive = <SUN4I_PINCTRL_10_MA>;
+		allwinner,pull = <SUN4I_PINCTRL_NO_PULL>;
+	};
+
+	lcd_rgb888_pins: lcd_rgb888_pins@0 {
+		allwinner,pins = "PD0", "PD1", "PD2", "PD3", "PD4", "PD5",
+		                 "PD6", "PD7", "PD8", "PD9", "PD10", "PD11",
+		                 "PD12", "PD13", "PD14", "PD15", "PD16",
+		                 "PD17", "PD18", "PD19", "PD20", "PD21",
+		                 "PD22", "PD23", "PD24", "PD25", "PD26",
+		                 "PD27";
+		allwinner,function = "lcd0";
+		allwinner,drive = <SUN4I_PINCTRL_10_MA>;
+		allwinner,pull = <SUN4I_PINCTRL_NO_PULL>;
+	};
+
 	mmc3_cd_pin_olinuxinom: mmc3_cd_pin@0 {
 		pins = "PH11";
 		function = "gpio_in";
@@ -249,6 +405,12 @@
 		function = "gpio_in";
 		bias-pull-down;
 	};
+};
+
+&pwm {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_pins_a>;
+	status = "okay";
 };
 
 &reg_ahci_5v {

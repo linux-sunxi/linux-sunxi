@@ -121,6 +121,14 @@ config DRM_KMS_CMA_HELPER
 	help
 	  Choose this if you need the KMS CMA helper functions
 
+config DRM_CMA_FBDEV_BUFFER_NUM
+	int "Cma Fbdev Buffer Number"
+	depends on DRM_KMS_CMA_HELPER
+	default 2
+	help
+	  Defines the buffer number of cma fbdev.  Default is 2.
+	  For double buffer please set to 2 and 3 for triple buffer.
+
 source "drivers/gpu/drm/i2c/Kconfig"
 
 source "drivers/gpu/drm/arm/Kconfig"

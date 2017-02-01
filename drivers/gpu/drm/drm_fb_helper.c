@@ -1234,6 +1234,56 @@ int drm_fb_helper_setcmap(struct fb_cmap *cmap, struct fb_info *info)
 EXPORT_SYMBOL(drm_fb_helper_setcmap);
 
 /**
+ * drm_fb_helper_ioctl - legacy ioctl implementation
+ * @info: fbdev registered by the helper
+ * @cmd: ioctl like FBIO_WAITFORVSYNC
+ * @arg: ioctl argument
+ */
+int drm_fb_helper_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+{
+	struct drm_fb_helper *fb_helper = info->par;
+	struct drm_device *dev = fb_helper->dev;
+	unsigned int i;
+	int ret = 0;
+
+	switch (cmd) {
+	case FBIO_WAITFORVSYNC:
+		drm_modeset_lock_all(dev);
+
+		if (!drm_fb_helper_is_bound(fb_helper)) {
+			drm_modeset_unlock_all(dev);
+			return -EBUSY;
+		}
+
+		for (i = 0; i < fb_helper->crtc_count; i++) {
+			struct drm_mode_set *mode_set;
+			struct drm_crtc *crtc;
+
+			mode_set = &fb_helper->crtc_info[i].mode_set;
+			crtc = mode_set->crtc;
+
+			if (!crtc->state->active)
+				continue;
+
+			ret = drm_crtc_vblank_get(crtc);
+
+			if (!ret) {
+				drm_crtc_wait_one_vblank(crtc);
+				drm_crtc_vblank_put(crtc);
+			}
+		}
+
+		drm_modeset_unlock_all(dev);
+		return ret;
+	default:
+		return -ENOTTY;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(drm_fb_helper_ioctl);
+
+/**
  * drm_fb_helper_check_var - implementation for ->fb_check_var
  * @var: screeninfo to check
  * @info: fbdev registered by the helper
