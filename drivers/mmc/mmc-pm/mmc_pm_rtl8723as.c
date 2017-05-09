@@ -19,77 +19,77 @@ static int rtl8723as_bt_on = 0;
 
 static int rtk_suspend = 0;
 
-static int rtl8723as_gpio_ctrl(char* name, int level)
+static int rtl8723as_pwr_gpio_ctrl(int level)
 {
     struct mmc_pm_ops *ops = &mmc_card_pm_ops;
-    char* gpio_cmd[4] = {"rtk_rtl8723as_wb_pwr", "rtk_rtl8723as_wl_dis", "rtk_rtl8723as_bt_dis", "rtk_rtl8723as_wl_wps"};
-    int i = 0;
-    int ret = 0;
-    
-    for (i=0; i<4; i++) {
-        if (strcmp(name, gpio_cmd[i])==0)
-            break;
-    }
-    if (i==4) {
-        rtw_msg("No gpio %s for %s module\n", name, SDIO_MODULE_NAME);
-        return -1;
-    }
-    
-    rtw_msg("Set GPIO %s to %d !\n", name, level);
-    if (strcmp(name, "rtk_rtl8723as_wl_dis") == 0) {
-        if ((level && !rtl8723as_bt_on)
-            || (!level && !rtl8723as_bt_on)) {
-            rtw_msg("%s is powered %s by wifi\n", SDIO_MODULE_NAME, level ? "up" : "down");
-            goto power_change;
-        } else {
-            if (level) {
-                rtw_msg("%s is already on by bt\n", SDIO_MODULE_NAME);
-            } else {
-                rtw_msg("%s should stay on because of bt\n", SDIO_MODULE_NAME);
-            }
-            goto state_change;
-        }
-    }
-    if (strcmp(name, "rtk_rtl8723as_bt_dis") == 0) {
-        if ((level && !rtl8723as_wl_on)
-            || (!level && !rtl8723as_wl_on)) {
-            rtw_msg("%s is powered %s by bt\n", SDIO_MODULE_NAME, level ? "up" : "down");
-            goto power_change;
-        } else {
-            if (level) {
-                rtw_msg("%s is already on by wifi\n", SDIO_MODULE_NAME);
-            } else {
-                rtw_msg("%s should stay on because of wifi\n", SDIO_MODULE_NAME);
-            }
-            goto state_change;
+    int ret = gpio_write_one_pin_value(ops->pio_hdle, level, "rtk_rtl8723as_wb_pwr");
+
+    if (!ret) {
+        rtw_msg("%s powered %s\n", SDIO_MODULE_NAME, level ? "up" : "down");
+        if (!level) {
+            rtl8723as_wl_on = 0;
+            rtl8723as_bt_on = 0;
         }
     }
 
-gpio_state_change:
-    ret = gpio_write_one_pin_value(ops->pio_hdle, level, name);
-    if (ret) {
-        rtw_msg("Failed to set gpio %s to %d !\n", name, level);
+    return ret;
+}
+
+struct gpio_per_module_cmd {
+    const char *this_module_name;
+    const char *other_module_name;
+    const char *this_module_dis_pin_name;
+    int *this_module_on_status;
+    int *other_module_on_status;
+};
+
+static int rtl8723as_gpio_ctrl(char* name, int level)
+{
+    struct mmc_pm_ops *ops = &mmc_card_pm_ops;
+    struct gpio_per_module_cmd gpio_cmd[4] = {
+        { "wifi", "bluetooth", "rtk_rtl8723as_wl_dis", &rtl8723as_wl_on, &rtl8723as_bt_on },
+        { "bluetooth", "wifi", "rtk_rtl8723as_bt_dis", &rtl8723as_bt_on, &rtl8723as_wl_on }
+    };
+    int i = 0;
+    int ret = 0;
+
+    if (strcmp(name, "rtk_rtl8723as_wb_pwr") == 0)
+        return rtl8723as_pwr_gpio_ctrl(level);
+
+    for (i=0; i<2; i++) {
+        if (strcmp(name, gpio_cmd[i].this_module_dis_pin_name)==0)
+            break;
+    }
+
+    if (i==2) {
+        rtw_msg("No gpio %s for %s module\n", name, SDIO_MODULE_NAME);
         return -1;
     }
-    
-    return 0;
-    
-power_change:
-    ret = gpio_write_one_pin_value(ops->pio_hdle, level, "rtk_rtl8723as_wb_pwr");
-    if (ret) {
-        rtw_msg("Failed to power off %s module!\n", SDIO_MODULE_NAME);
-        return -1;
+
+    if (!gpio_cmd[i].other_module_on_status) {
+        rtw_msg("%s is powered %s by %s\n",
+                SDIO_MODULE_NAME,
+                level ? "up" : "down",
+                *(gpio_cmd[i].this_module_name));
+        ret = rtl8723as_pwr_gpio_ctrl(level);
+        if (!ret)
+            ret = gpio_write_one_pin_value(ops->pio_hdle, level, name);
+        if (!ret)
+            *(gpio_cmd[i].this_module_on_status) = level;
+    } else if (level) {
+        rtw_msg("%s is already on by %s\n",
+                SDIO_MODULE_NAME,
+                gpio_cmd[i].other_module_name);
+        ret = gpio_write_one_pin_value(ops->pio_hdle, level, name);
+        if (!ret)
+            *(gpio_cmd[i].this_module_on_status) = level;
+    } else {
+        rtw_msg("%s should stay on because of %s\n",
+                SDIO_MODULE_NAME,
+                gpio_cmd[i].other_module_name);
     }
-    udelay(500);
-    
-state_change:
-    if (strcmp(name, "rtk_rtl8723as_wl_dis")==0)
-        rtl8723as_wl_on = level;
-    if (strcmp(name, "rtk_rtl8723as_bt_dis")==0)
-        rtl8723as_bt_on = level;
-    rtw_msg("%s power state change: wifi %d, bt %d !!\n", SDIO_MODULE_NAME, rtl8723as_wl_on, rtl8723as_bt_on);
-    
-    goto gpio_state_change;
+
+    return ret;
 }
 
 static int rtl8723as_get_gpio_value(char* name)
