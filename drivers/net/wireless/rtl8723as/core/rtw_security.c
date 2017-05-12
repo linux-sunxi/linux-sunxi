@@ -777,7 +777,6 @@ u32 rtw_tkip_decrypt(_adapter *padapter, u8 *precvframe)
 	struct	sta_info		*stainfo;
 	struct	rx_pkt_attrib	 *prxattrib = &((union recv_frame *)precvframe)->u.hdr.attrib;
 	struct 	security_priv	*psecuritypriv=&padapter->securitypriv;
-//	struct	recv_priv		*precvpriv=&padapter->recvpriv;
 	u32		res=_SUCCESS;
 
 _func_enter_;
@@ -793,7 +792,6 @@ _func_enter_;
 			if(IS_MCAST(prxattrib->ra))
 			{
 				//DBG_871X("rx bc/mc packets, to perform sw rtw_tkip_decrypt\n");
-				//prwskey = psecuritypriv->dot118021XGrpKey[psecuritypriv->dot118021XGrpKeyid].skey;
 				prwskey = psecuritypriv->dot118021XGrpKey[prxattrib->key_index].skey;
 				prwskeylen=16;
 			}
@@ -1310,7 +1308,6 @@ _func_exit_;
 static sint aes_cipher(u8 *key, uint	hdrlen,
 			u8 *pframe, uint plen)
 {
-//	/*static*/ unsigned char	message[MAX_MSG_SIZE];
 	uint	qc_exists, a4_exists, i, j, payload_remainder,
 		num_blocks, payload_index;
 
@@ -1325,7 +1322,6 @@ static sint aes_cipher(u8 *key, uint	hdrlen,
 	u8 aes_out[16];
 	u8 padded_buffer[16];
 	u8 mic[8];
-//	uint	offset = 0;
 	uint	frtype  = GetFrameType(pframe);
 	uint	frsubtype  = GetFrameSubType(pframe);
 	
@@ -1506,9 +1502,6 @@ u32	rtw_aes_encrypt(_adapter *padapter, u8 *pxmitframe)
 {	// exclude ICV
 
 
-	/*static*/ 
-//	unsigned char	message[MAX_MSG_SIZE];
-
     	/* Intermediate Buffers */
 	sint 	curfragnum,length;
 	u32	prwskeylen;
@@ -1519,7 +1512,6 @@ u32	rtw_aes_encrypt(_adapter *padapter, u8 *pxmitframe)
 	struct 	security_priv	*psecuritypriv=&padapter->securitypriv;
 	struct	xmit_priv		*pxmitpriv=&padapter->xmitpriv;
 
-//	uint	offset = 0;
 	u32 res=_SUCCESS;
 _func_enter_;		
 
@@ -1863,10 +1855,6 @@ u32	rtw_aes_decrypt(_adapter *padapter, u8 *precvframe)
 {	// exclude ICV
 
 
-	/*static*/ 
-//	unsigned char	message[MAX_MSG_SIZE];
-
-
     	/* Intermediate Buffers */
 
 
@@ -1876,7 +1864,6 @@ u32	rtw_aes_decrypt(_adapter *padapter, u8 *precvframe)
 	struct	sta_info		*stainfo;
 	struct	rx_pkt_attrib	 *prxattrib = &((union recv_frame *)precvframe)->u.hdr.attrib;
 	struct 	security_priv	*psecuritypriv=&padapter->securitypriv;
-//	struct	recv_priv		*precvpriv=&padapter->recvpriv;
 	u32	res=_SUCCESS;
 _func_enter_;	 
 	pframe=(unsigned char *)((union recv_frame*)precvframe)->u.hdr.rx_data;
@@ -1916,7 +1903,6 @@ _func_enter_;
 _func_exit_;		
 	return res;
 }
-#ifndef PLATFORM_FREEBSD
 /* compress 512-bits */
 static int sha256_compress(struct sha256_state *md, unsigned char *buf)
 {
@@ -2182,7 +2168,6 @@ static void hmac_sha256_vector(u8 *key, size_t key_len, size_t num_elem,
 	_len[1] = 32;
 	sha256_vector(2, _addr, _len, mac);
 }
-#endif //PLATFORM_FREEBSD
 /**
  * sha256_prf - SHA256-based Pseudo-Random Function (IEEE 802.11r, 8.5.1.5.2)
  * @key: Key for PRF
@@ -2196,7 +2181,6 @@ static void hmac_sha256_vector(u8 *key, size_t key_len, size_t num_elem,
  * This function is used to derive new, cryptographically separate keys from a
  * given key.
  */
-#ifndef PLATFORM_FREEBSD //Baron
 static void sha256_prf(u8 *key, size_t key_len, char *label,
 		u8 *data, size_t data_len, u8 *buf, size_t buf_len)
 {
@@ -2233,7 +2217,6 @@ static void sha256_prf(u8 *key, size_t key_len, char *label,
 		counter++;
 	}
 }
-#endif //PLATFORM_FREEBSD Baron
 
 /* AES tables*/
 const u32 Te0[256] = {
@@ -2412,7 +2395,6 @@ const u8 rcons[] = {
  *
  * @return	the number of rounds for the given cipher key size.
  */
-#ifndef PLATFORM_FREEBSD //Baron
 static void rijndaelKeySetupEnc(u32 rk[/*44*/], const u8 cipherKey[])
 {
 	int i;
@@ -2628,7 +2610,6 @@ static int omac1_aes_128(u8 *key, u8 *data, size_t data_len, u8 *mac)
 {
 	return omac1_aes_128_vector(key, 1, &data, &data_len, mac);
 }
-#endif //PLATFORM_FREEBSD Baron
 
 #ifdef CONFIG_TDLS
 void wpa_tdls_generate_tpk(_adapter *padapter, struct sta_info *psta)
@@ -2801,20 +2782,7 @@ int tdls_verify_mic(u8 *kck, u8 trans_seq,
 }
 #endif //CONFIG_TDLS
 
-#ifdef PLATFORM_WINDOWS
-void rtw_use_tkipkey_handler (
-	IN	PVOID					SystemSpecific1,
-	IN	PVOID					FunctionContext,
-	IN	PVOID					SystemSpecific2,
-	IN	PVOID					SystemSpecific3
-	)
-#endif
-#ifdef PLATFORM_LINUX
 void rtw_use_tkipkey_handler(void *FunctionContext)
-#endif
-#ifdef PLATFORM_FREEBSD
-void rtw_use_tkipkey_handler(void *FunctionContext)
-#endif
 {
         _adapter *padapter = (_adapter *)FunctionContext;
 
@@ -2822,14 +2790,6 @@ void rtw_use_tkipkey_handler(void *FunctionContext)
 _func_enter_;			
 
 	RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("^^^rtw_use_tkipkey_handler ^^^\n"));
-	
-/*
-	if(padapter->bDriverStopped ||padapter->bSurpriseRemoved){
-			RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("^^^rtw_use_tkipkey_handler (padapter->bDriverStopped %d)(padapter->bSurpriseRemoved %d)^^^\n",padapter->bDriverStopped,padapter->bSurpriseRemoved));
-
-		return;
-	}
-	*/
 	
 	padapter->securitypriv.busetkipkey=_TRUE;
 
