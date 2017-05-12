@@ -337,21 +337,6 @@ void Switch_DM_Func(_adapter *padapter, u32 mode, u8 enable)
 		padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_DM_FUNC_CLR, (u8 *)(&mode));
 	}
 
-#if 0
-	u8 val8;
-
-	val8 = rtw_read8(padapter, FW_DYNAMIC_FUN_SWITCH);
-
-	if(enable == _TRUE)
-	{
-		rtw_write8(padapter, FW_DYNAMIC_FUN_SWITCH, (val8 | mode));
-	}
-	else
-	{
-		rtw_write8(padapter, FW_DYNAMIC_FUN_SWITCH, (val8 & mode));
-	}
-#endif
-
 }
 
 static void Set_NETYPE1_MSR(_adapter *padapter, u8 type)
@@ -560,40 +545,10 @@ void invalidate_cam_all(_adapter *padapter)
 {
 	padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_CAM_INVALID_ALL, 0);
 }
-#if 0
-static u32 _ReadCAM(_adapter *padapter ,u32 addr)
-{
-	u32 count = 0, cmd;
-	cmd = CAM_POLLINIG |addr ;
-	rtw_write32(padapter, RWCAM, cmd);
-
-	do{
-		if(0 == (rtw_read32(padapter,REG_CAMCMD) & CAM_POLLINIG)){
-			break;
-		}
-	}while(count++ < 100);		
-
-	return rtw_read32(padapter,REG_CAMREAD);	
-}
-void read_cam(_adapter *padapter ,u8 entry)
-{
-	u32	j,count = 0, addr, cmd;
-	addr = entry << 3;
-
-	printk("********* DUMP CAM Entry_#%02d***************\n",entry);
-	for (j = 0; j < 6; j++)
-	{	
-		cmd = _ReadCAM(padapter ,addr+j);
-		printk("offset:0x%02x => 0x%08x \n",addr+j,cmd);
-	}
-	printk("*********************************\n");
-}
-#endif
 
 void write_cam(_adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key)
 {
 	unsigned int	i, val, addr;
-	//unsigned int    cmd;
 	int j;
 	u32	cam_val[2];
 
@@ -623,46 +578,17 @@ void write_cam(_adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key)
 
 		padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_CAM_WRITE, (u8 *)cam_val);
 		
-		//rtw_write32(padapter, WCAMI, val);
-		
-		//cmd = CAM_POLLINIG | CAM_WRITE | (addr + j);
-		//rtw_write32(padapter, RWCAM, cmd);
-		
-		//DBG_871X("%s=> cam write: %x, %x\n",__FUNCTION__, cmd, val);
-		
 	}
 
 }
 
 void clear_cam_entry(_adapter *padapter, u8 entry)
 {	
-#if 0
-	u32	addr, val=0;
-	u32	cam_val[2];
-
-	addr = entry << 3;
-	
-
-	cam_val[0] = val;
-	cam_val[1] = addr + (unsigned int)0;
-
-	padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_CAM_WRITE, (u8 *)cam_val);
-
-
-
-	cam_val[0] = val;
-	cam_val[1] = addr + (unsigned int)1;
-
-	padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_CAM_WRITE, (u8 *)cam_val);
-#else
-
 	unsigned char null_sta[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 	unsigned char null_key[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00};
 
 	write_cam(padapter, entry, 0, null_sta, null_key);
-
-#endif
 }
 
 int allocate_fw_sta_entry(_adapter *padapter)
@@ -774,7 +700,6 @@ int WFD_info_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs	pIE)
 
 int WMM_param_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs	pIE)
 {
-	//struct registry_priv	*pregpriv = &padapter->registrypriv;
 	struct mlme_priv	*pmlmepriv = &(padapter->mlmepriv);
 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);	
@@ -788,27 +713,6 @@ int WMM_param_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs	pIE)
 	pmlmeinfo->WMM_enable = 1;
 	_rtw_memcpy(&(pmlmeinfo->WMM_param), (pIE->data + 6), sizeof(struct WMM_para_element));
 	return _TRUE;
-
-	/*if (pregpriv->wifi_spec == 1)
-	{
-		if (pmlmeinfo->WMM_enable == 1)
-		{
-			//todo: compare the parameter set count & decide wheher to update or not
-			return _FAIL;
-		}
-		else
-		{
-			pmlmeinfo->WMM_enable = 1;
-			_rtw_rtw_memcpy(&(pmlmeinfo->WMM_param), (pIE->data + 6), sizeof(struct WMM_para_element));
-			return _TRUE;
-		}
-	}
-	else
-	{
-		pmlmeinfo->WMM_enable = 0;
-		return _FAIL;
-	}*/
-	
 }
 
 void WMMOnAssocRsp(_adapter *padapter)
@@ -838,7 +742,6 @@ void WMMOnAssocRsp(_adapter *padapter)
 		ACI = (pmlmeinfo->WMM_param.ac_param[i].ACI_AIFSN >> 5) & 0x03;
 		ACM = (pmlmeinfo->WMM_param.ac_param[i].ACI_AIFSN >> 4) & 0x01;
 
-		//AIFS = AIFSN * slot time + SIFS - r2t phy delay
 		AIFS = (pmlmeinfo->WMM_param.ac_param[i].ACI_AIFSN & 0x0f) * pmlmeinfo->slotTime + aSifsTime;
 
 		ECWMin = (pmlmeinfo->WMM_param.ac_param[i].CW & 0x0f);
@@ -856,7 +759,6 @@ void WMMOnAssocRsp(_adapter *padapter)
 
 			case 0x1:
 				padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_AC_PARAM_BK, (u8 *)(&acParm));
-				//acm_mask |= (ACM? BIT(0):0);
 				break;
 
 			case 0x2:
@@ -939,9 +841,6 @@ static void bwmode_update_check(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pI
 		WLAN_BSSID_EX 	*cur_network = &(pmlmeinfo->network);
 		struct sta_priv	*pstapriv = &padapter->stapriv;
 	
-		//set_channel_bwmode(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset, pmlmeext->cur_bwmode);
-
-		
 		//update ap's stainfo
 		psta = rtw_get_stainfo(pstapriv, cur_network->MacAddress);
 		if(psta)
@@ -961,8 +860,6 @@ static void bwmode_update_check(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pI
 			}
 			
 		}
-
-		//pmlmeinfo->bwmode_updated = _FALSE;//bwmode_updated done, reset it!
 		
 	}	
 
@@ -1036,11 +933,6 @@ void HT_caps_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE)
 		{
 			pmlmeinfo->HT_caps.u.HT_cap_element.MCS_rate[i] &= MCS_rate_2R[i];
 		}
-	        #ifdef RTL8192C_RECONFIG_TO_1T1R
-		{
-			pmlmeinfo->HT_caps.HT_cap_element.MCS_rate[i] &= MCS_rate_1R[i];
-		}
-		#endif
 	}
 	
 	return;
@@ -1071,7 +963,6 @@ void HTOnAssocRsp(_adapter *padapter)
 {
 	unsigned char		max_AMPDU_len;
 	unsigned char		min_MPDU_spacing;
-	//struct registry_priv	 *pregpriv = &padapter->registrypriv;
 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
 	
@@ -1084,7 +975,6 @@ void HTOnAssocRsp(_adapter *padapter)
 	else
 	{
 		pmlmeinfo->HT_enable = 0;
-		//set_channel_bwmode(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset, pmlmeext->cur_bwmode);
 		return;
 	}
 	
@@ -1101,56 +991,6 @@ void HTOnAssocRsp(_adapter *padapter)
 
 	padapter->HalFunc.SetHwRegHandler(padapter, HW_VAR_AMPDU_FACTOR, (u8 *)(&max_AMPDU_len));
 
-#if 0 //move to rtw_update_ht_cap()
-	if ((pregpriv->cbw40_enable) &&
-		(pmlmeinfo->HT_caps.u.HT_cap_element.HT_caps_info & BIT(1)) && 
-		(pmlmeinfo->HT_info.infos[0] & BIT(2)))
-	{
-		//switch to the 40M Hz mode accoring to the AP
-		pmlmeext->cur_bwmode = HT_CHANNEL_WIDTH_40;
-		switch ((pmlmeinfo->HT_info.infos[0] & 0x3))
-		{
-			case HT_EXTCHNL_OFFSET_UPPER:
-				pmlmeext->cur_ch_offset = HAL_PRIME_CHNL_OFFSET_LOWER;
-				break;
-			
-			case HT_EXTCHNL_OFFSET_LOWER:
-				pmlmeext->cur_ch_offset = HAL_PRIME_CHNL_OFFSET_UPPER;
-				break;
-				
-			default:
-				pmlmeext->cur_ch_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-				break;
-		}
-		
-		//SelectChannel(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset);
-	}
-#endif
-
-	//set_channel_bwmode(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset, pmlmeext->cur_bwmode);
-
-#if 0 //move to rtw_update_ht_cap()
-	//
-	// Config SM Power Save setting
-	//
-	pmlmeinfo->SM_PS = (pmlmeinfo->HT_caps.u.HT_cap_element.HT_caps_info & 0x0C) >> 2;
-	if(pmlmeinfo->SM_PS == WLAN_HT_CAP_SM_PS_STATIC)
-	{
-		/*u8 i;
-		//update the MCS rates
-		for (i = 0; i < 16; i++)
-		{
-			pmlmeinfo->HT_caps.HT_cap_element.MCS_rate[i] &= MCS_rate_1R[i];
-		}*/
-		DBG_871X("%s(): WLAN_HT_CAP_SM_PS_STATIC\n",__FUNCTION__);
-	}
-
-	//
-	// Config current HT Protection mode.
-	//
-	pmlmeinfo->HT_protection = pmlmeinfo->HT_info.infos[1] & 0x3;
-#endif
-	
 }
 
 void ERP_IE_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE)
@@ -1234,16 +1074,6 @@ void update_beacon_info(_adapter *padapter, u8 *pframe, uint pkt_len, struct sta
 		
 		switch (pIE->ElementID)
 		{
-#if 0			
-			case _VENDOR_SPECIFIC_IE_:		
-				//todo: to update WMM paramter set while receiving beacon			
-				if (_rtw_memcmp(pIE->data, WMM_PARA_OUI, 6))	//WMM
-				{
-					(WMM_param_handler(padapter, pIE))? WMMOnAssocRsp(padapter): 0;
-				}				
-				break;
-#endif
-
 			case _HT_EXTRA_INFO_IE_:	//HT info				
 				//HT_info_handler(padapter, pIE);
 				bwmode_update_check(padapter, pIE);
@@ -1603,8 +1433,6 @@ void update_IOT_info(_adapter *padapter)
 			Switch_DM_Func(padapter, (~DYNAMIC_BB_DYNAMIC_TXPWR), _FALSE);
 			break;
 		case HT_IOT_PEER_REALTEK:
-			//rtw_write16(padapter, 0x4cc, 0xffff);
-			//rtw_write16(padapter, 0x546, 0x01c0);
 			//disable high power			
 			Switch_DM_Func(padapter, (~DYNAMIC_BB_DYNAMIC_TXPWR), _FALSE);
 			break;
@@ -1624,26 +1452,22 @@ void update_capinfo(PADAPTER Adapter, u16 updateCap)
 
 	// Check preamble mode, 2005.01.06, by rcnjko.
 	// Mark to update preamble value forever, 2008.03.18 by lanhsin
-	//if( pMgntInfo->RegPreambleMode == PREAMBLE_AUTO )
-	{
-			
-		if(updateCap & cShortPreamble)
-		{ // Short Preamble
-			if(pmlmeinfo->preamble_mode != PREAMBLE_SHORT) // PREAMBLE_LONG or PREAMBLE_AUTO
-			{
-				ShortPreamble = _TRUE;
-				pmlmeinfo->preamble_mode = PREAMBLE_SHORT;
-				Adapter->HalFunc.SetHwRegHandler( Adapter, HW_VAR_ACK_PREAMBLE, (u8 *)&ShortPreamble );
-			}
+	if(updateCap & cShortPreamble)
+	{ // Short Preamble
+		if(pmlmeinfo->preamble_mode != PREAMBLE_SHORT) // PREAMBLE_LONG or PREAMBLE_AUTO
+		{
+			ShortPreamble = _TRUE;
+			pmlmeinfo->preamble_mode = PREAMBLE_SHORT;
+			Adapter->HalFunc.SetHwRegHandler( Adapter, HW_VAR_ACK_PREAMBLE, (u8 *)&ShortPreamble );
 		}
-		else
-		{ // Long Preamble
-			if(pmlmeinfo->preamble_mode != PREAMBLE_LONG)  // PREAMBLE_SHORT or PREAMBLE_AUTO
-			{
-				ShortPreamble = _FALSE;
-				pmlmeinfo->preamble_mode = PREAMBLE_LONG;
-				Adapter->HalFunc.SetHwRegHandler( Adapter, HW_VAR_ACK_PREAMBLE, (u8 *)&ShortPreamble );
-			}
+	}
+	else
+	{ // Long Preamble
+		if(pmlmeinfo->preamble_mode != PREAMBLE_LONG)  // PREAMBLE_SHORT or PREAMBLE_AUTO
+		{
+			ShortPreamble = _FALSE;
+			pmlmeinfo->preamble_mode = PREAMBLE_LONG;
+			Adapter->HalFunc.SetHwRegHandler( Adapter, HW_VAR_ACK_PREAMBLE, (u8 *)&ShortPreamble );
 		}
 	}
 
@@ -1745,29 +1569,6 @@ void update_wireless_mode(_adapter *padapter)
 void fire_write_MAC_cmd(_adapter *padapter, unsigned int addr, unsigned int value);
 void fire_write_MAC_cmd(_adapter *padapter, unsigned int addr, unsigned int value)
 {
-#if 0
-	struct cmd_obj					*ph2c;
-	struct reg_rw_parm			*pwriteMacPara;
-	struct cmd_priv					*pcmdpriv = &(padapter->cmdpriv);
-
-	if ((ph2c = (struct cmd_obj*)rtw_zmalloc(sizeof(struct cmd_obj))) == NULL)
-	{
-		return;
-	}	
-
-	if ((pwriteMacPara = (struct reg_rw_parm*)rtw_malloc(sizeof(struct reg_rw_parm))) == NULL) 
-	{		
-		rtw_mfree((unsigned char *)ph2c, sizeof(struct cmd_obj));
-		return;
-	}
-	
-	pwriteMacPara->rw = 1;
-	pwriteMacPara->addr = addr;
-	pwriteMacPara->value = value;
-	
-	init_h2fwcmd_w_parm_no_rsp(ph2c, pwriteMacPara, GEN_CMD_CODE(_Write_MACREG));
-	rtw_enqueue_cmd(pcmdpriv, ph2c);
-#endif	
 }
 
 u8 bmc_support_rate_ofdm[4] = 
@@ -1880,106 +1681,4 @@ void beacon_timing_control(_adapter *padapter)
 {
 	padapter->HalFunc.SetBeaconRelatedRegistersHandler(padapter);
 }
-
-#if 0
-unsigned int setup_beacon_frame(_adapter *padapter, unsigned char *beacon_frame)
-{
-	unsigned short				ATIMWindow;
-	unsigned char					*pframe;
-	struct tx_desc 				*ptxdesc;
-	struct rtw_ieee80211_hdr 	*pwlanhdr;
-	unsigned short				*fctrl;
-	unsigned int					rate_len, len = 0;
-	struct xmit_priv			*pxmitpriv = &(padapter->xmitpriv);
-	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
-	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
-	WLAN_BSSID_EX 		*cur_network = &(pmlmeinfo->network);
-	u8	bc_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-	
-	_rtw_memset(beacon_frame, 0, 256);
-	
-	pframe = beacon_frame + TXDESC_SIZE;
-	
-	pwlanhdr = (struct rtw_ieee80211_hdr *)pframe;	
-	
-	fctrl = &(pwlanhdr->frame_ctl);
-	*(fctrl) = 0;
-	
-	_rtw_memcpy(pwlanhdr->addr1, bc_addr, ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr3, get_my_bssid(cur_network), ETH_ALEN);
-	
-	SetFrameSubType(pframe, WIFI_BEACON);
-	
-	pframe += sizeof(struct rtw_ieee80211_hdr_3addr);	
-	len = sizeof(struct rtw_ieee80211_hdr_3addr);
-
-	//timestamp will be inserted by hardware
-	pframe += 8;
-	len += 8;
-
-	// beacon interval: 2 bytes
-	_rtw_memcpy(pframe, (unsigned char *)(rtw_get_beacon_interval_from_ie(cur_network->IEs)), 2); 
-
-	pframe += 2;
-	len += 2;
-
-	// capability info: 2 bytes
-	_rtw_memcpy(pframe, (unsigned char *)(rtw_get_capability_from_ie(cur_network->IEs)), 2);
-
-	pframe += 2;
-	len += 2;
-
-	// SSID
-	pframe = rtw_set_ie(pframe, _SSID_IE_, cur_network->Ssid.SsidLength, cur_network->Ssid.Ssid, &len);
-
-	// supported rates...
-	rate_len = rtw_get_rateset_len(cur_network->SupportedRates);
-	pframe = rtw_set_ie(pframe, _SUPPORTEDRATES_IE_, ((rate_len > 8)? 8: rate_len), cur_network->SupportedRates, &len);
-
-	// DS parameter set
-	pframe = rtw_set_ie(pframe, _DSSET_IE_, 1, (unsigned char *)&(cur_network->Configuration.DSConfig), &len);
-
-	// IBSS Parameter Set...
-	//ATIMWindow = cur->Configuration.ATIMWindow;
-	ATIMWindow = 0;
-	pframe = rtw_set_ie(pframe, _IBSS_PARA_IE_, 2, (unsigned char *)(&ATIMWindow), &len);
-
-	//todo: ERP IE
-	
-	// EXTERNDED SUPPORTED RATE
-	if (rate_len > 8)
-	{
-		pframe = rtw_set_ie(pframe, _EXT_SUPPORTEDRATES_IE_, (rate_len - 8), (cur_network->SupportedRates + 8), &len);
-	}
-
-	if ((len + TXDESC_SIZE) > 256)
-	{
-		//DBG_871X("marc: beacon frame too large\n");
-		return 0;
-	}
-
-	//fill the tx descriptor
-	ptxdesc = (struct tx_desc *)beacon_frame;
-	
-	//offset 0	
-	ptxdesc->txdw0 |= cpu_to_le32(len & 0x0000ffff); 
-	ptxdesc->txdw0 |= cpu_to_le32(((TXDESC_SIZE + OFFSET_SZ) << OFFSET_SHT) & 0x00ff0000); //default = 32 bytes for TX Desc
-	
-	//offset 4	
-	ptxdesc->txdw1 |= cpu_to_le32((0x10 << QSEL_SHT) & 0x00001f00);
-	
-	//offset 8		
-	ptxdesc->txdw2 |= cpu_to_le32(BMC);
-	ptxdesc->txdw2 |= cpu_to_le32(BK);
-
-	//offset 16		
-	ptxdesc->txdw4 = 0x80000000;
-	
-	//offset 20
-	ptxdesc->txdw5 = 0x00000000; //1M	
-	
-	return (len + TXDESC_SIZE);
-}
-#endif
 
