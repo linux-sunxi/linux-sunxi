@@ -120,7 +120,6 @@ int rtw_hw_suspend(_adapter *padapter );
 int rtw_hw_resume(_adapter *padapter);
 #endif
 
-#if defined (PLATFORM_LINUX)||defined (PLATFORM_FREEBSD)
 void rtw_ps_processor(_adapter*padapter)
 {
 #ifdef CONFIG_P2P
@@ -289,7 +288,6 @@ void pwr_state_check_handler(void *FunctionContext)
 
 
 }
-#endif
 
 
 #ifdef CONFIG_LPS
@@ -528,7 +526,6 @@ _func_enter_;
 #ifdef CONFIG_P2P
 			// Set CTWindow after LPS
 			if(pwdinfo->opp_ps == 1)
-			//if(pwdinfo->p2p_ps_enable == _TRUE)
 				p2p_ps_wk_cmd(padapter, P2P_PS_ENABLE, 0);
 #endif //CONFIG_P2P
 
@@ -539,10 +536,6 @@ _func_enter_;
 			rtw_set_rpwm(padapter, PS_STATE_S2);
 #endif
 		}
-		//else
-		//{
-		//	pwrpriv->pwr_mode = PS_MODE_ACTIVE;
-		//}
 	}
 
 #ifdef CONFIG_LPS_LCLK
@@ -675,25 +668,8 @@ _func_enter_;
 		{
 			#ifdef CONFIG_AUTOSUSPEND
 			if(Adapter->registrypriv.usbss_enable)
-			{
-				#if (LINUX_VERSION_CODE>=KERNEL_VERSION(2,6,35))
 				usb_disable_autosuspend(Adapter->dvobjpriv.pusbdev);
-				#elif (LINUX_VERSION_CODE>=KERNEL_VERSION(2,6,22) && LINUX_VERSION_CODE<=KERNEL_VERSION(2,6,34))
-				Adapter->dvobjpriv.pusbdev->autosuspend_disabled = Adapter->bDisableAutosuspend;//autosuspend disabled by the user
-				#endif
-			}
-			else
 			#endif
-			{
-			/*
-				#ifdef CONFIG_IPS
-				if(_FALSE == ips_leave(Adapter))
-				{
-					DBG_871X("======> ips_leave fail.............\n");			
-				}
-				#endif
-			*/
-			}				
 		}	
 	}
 
@@ -765,14 +741,6 @@ void _cpwm_int_hdl(
 _func_enter_;
 
 	pwrpriv = &padapter->pwrctrlpriv;
-#if 0
-	if (pwrpriv->cpwm_tog == (preportpwrstate->state & PS_TOGGLE)) {
-		RT_TRACE(_module_rtl871x_pwrctrl_c_, _drv_err_,
-				 ("cpwm_int_hdl: tog(old)=0x%02x cpwm(new)=0x%02x toggle bit didn't change!?\n",
-				  pwrpriv->cpwm_tog, preportpwrstate->state));
-		goto exit;
-	}
-#endif
 
 	start_time = rtw_get_current_time();
 	while(1)
@@ -865,15 +833,11 @@ static void rpwmtimeout_workitem_callback(struct work_struct *work)
 
 	if (rtw_read8(padapter, 0x100) != 0xEA)
 	{
-#if 1
 		struct reportpwrstate_parm report;
 
 		report.state = PS_STATE_S2;
 		DBG_871X("\n%s: FW already leave 32K!\n\n", __func__);
 		_cpwm_int_hdl(padapter, &report);
-#else
-		cpwm_event_callback(&pwrpriv->cpwm_event);
-#endif
 		return;
 	}
 		
@@ -1211,10 +1175,6 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 
 _func_enter_;
 
-#ifdef PLATFORM_WINDOWS
-	pwrctrlpriv->pnp_current_pwr_state=NdisDeviceStateD0;
-#endif
-
 	_init_pwrlock(&pwrctrlpriv->lock);
 	pwrctrlpriv->rf_pwrstate = rf_on;
 	pwrctrlpriv->ips_enter_cnts=0;
@@ -1264,9 +1224,7 @@ _func_enter_;
 
 #endif // CONFIG_LPS_LCLK
 
-#ifdef PLATFORM_LINUX
 	_init_timer(&(pwrctrlpriv->pwr_state_check_timer), padapter->pnetdev, pwr_state_check_handler, (u8 *)padapter);
-#endif
 
 	#ifdef CONFIG_RESUME_IN_WORKQUEUE
 	_init_workitem(&pwrctrlpriv->resume_work, resume_workitem_callback, NULL);
@@ -1394,58 +1352,6 @@ void rtw_unregister_early_suspend(struct pwrctrl_priv *pwrpriv)
 }
 #endif //CONFIG_HAS_EARLYSUSPEND
 
-#ifdef CONFIG_ANDROID_POWER
-#if defined(CONFIG_USB_HCI) || defined(CONFIG_SDIO_HCI)
-extern int rtw_resume_process(PADAPTER padapter);
-#endif
-static void rtw_early_suspend(android_early_suspend_t *h)
-{
-	struct pwrctrl_priv *pwrpriv = container_of(h, struct pwrctrl_priv, early_suspend);
-	DBG_871X("%s\n",__FUNCTION__);
-	
-	//jeff: do nothing but set do_late_resume to false
-	pwrpriv->do_late_resume = _FALSE;
-}
-
-static void rtw_late_resume(android_early_suspend_t *h)
-{
-	struct pwrctrl_priv *pwrpriv = container_of(h, struct pwrctrl_priv, early_suspend);
-	_adapter *adapter = container_of(pwrpriv, _adapter, pwrctrlpriv);
-
-	DBG_871X("%s\n",__FUNCTION__);
-	if(pwrpriv->do_late_resume) {
-		#if defined(CONFIG_USB_HCI) || defined(CONFIG_SDIO_HCI)
-		rtw_resume_process(adapter);
-		pwrpriv->do_late_resume = _FALSE;
-		#endif
-	}
-}
-
-void rtw_register_early_suspend(struct pwrctrl_priv *pwrpriv)
-{
-	DBG_871X("%s\n", __FUNCTION__);
-
-	//jeff: set the early suspend level before blank screen, so we wll do late resume after scree is lit
-	pwrpriv->early_suspend.level = ANDROID_EARLY_SUSPEND_LEVEL_BLANK_SCREEN - 20;
-	pwrpriv->early_suspend.suspend = rtw_early_suspend;
-	pwrpriv->early_suspend.resume = rtw_late_resume;
-	android_register_early_suspend(&pwrpriv->early_suspend);	
-}
-
-void rtw_unregister_early_suspend(struct pwrctrl_priv *pwrpriv)
-{
-	DBG_871X("%s\n", __FUNCTION__);
-
-	pwrpriv->do_late_resume = _FALSE;
-
-	if (pwrpriv->early_suspend.suspend) 
-		android_unregister_early_suspend(&pwrpriv->early_suspend);
-
-	pwrpriv->early_suspend.suspend = NULL;
-	pwrpriv->early_suspend.resume = NULL;
-}
-#endif //CONFIG_ANDROID_POWER
-
 u8 rtw_interface_ps_func(_adapter *padapter,HAL_INTF_PS_FUNC efunc_id,u8* val)
 {
 	u8 bResult = _TRUE;
@@ -1473,11 +1379,6 @@ int _rtw_pwr_wakeup(_adapter *padapter, const char *caller)
 		ret = _FAIL;
 		goto exit;
 	}
-
-	//I think this should be check in IPS, LPS, autosuspend functions...
-	//if( pwrpriv->power_mgnt == PS_MODE_ACTIVE ) {
-	//	goto exit;
-	//}
 
 	//block???
 	if((pwrpriv->bInternalAutoSuspend == _TRUE)  && (padapter->net_closed == _TRUE)) {
