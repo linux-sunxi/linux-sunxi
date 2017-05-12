@@ -532,35 +532,30 @@ int proc_get_all_sta_info(char *page, char **start,
 
 			plist = get_next(plist);
 
-			//if(extra_arg == psta->aid)
-			{
-				len += snprintf(page + len, count - len, "sta's macaddr:" MAC_FMT "\n", MAC_ARG(psta->hwaddr));
-				len += snprintf(page + len, count - len, "rtsen=%d, cts2slef=%d\n", psta->rtsen, psta->cts2self);
-				len += snprintf(page + len, count - len, "qos_en=%d, ht_en=%d, init_rate=%d\n", psta->qos_option, psta->htpriv.ht_option, psta->init_rate);	
-				len += snprintf(page + len, count - len, "state=0x%x, aid=%d, macid=%d, raid=%d\n", psta->state, psta->aid, psta->mac_id, psta->raid);	
-				len += snprintf(page + len, count - len, "bwmode=%d, ch_offset=%d, sgi=%d\n", psta->htpriv.bwmode, psta->htpriv.ch_offset, psta->htpriv.sgi);						
-				len += snprintf(page + len, count - len, "ampdu_enable = %d\n", psta->htpriv.ampdu_enable);									
-				len += snprintf(page + len, count - len, "agg_enable_bitmap=%x, candidate_tid_bitmap=%x\n", psta->htpriv.agg_enable_bitmap, psta->htpriv.candidate_tid_bitmap);
-				len += snprintf(page + len, count - len, "sleepq_len=%d\n", psta->sleepq_len);
-				len += snprintf(page + len, count - len, "capability=0x%x\n", psta->capability);
-				len += snprintf(page + len, count - len, "flags=0x%x\n", psta->flags);
-				len += snprintf(page + len, count - len, "wpa_psk=0x%x\n", psta->wpa_psk);
-				len += snprintf(page + len, count - len, "wpa2_group_cipher=0x%x\n", psta->wpa2_group_cipher);
-				len += snprintf(page + len, count - len, "wpa2_pairwise_cipher=0x%x\n", psta->wpa2_pairwise_cipher);
-				len += snprintf(page + len, count - len, "qos_info=0x%x\n", psta->qos_info);
-				len += snprintf(page + len, count - len, "dot118021XPrivacy=0x%x\n", psta->dot118021XPrivacy);
+			len += snprintf(page + len, count - len, "sta's macaddr:" MAC_FMT "\n", MAC_ARG(psta->hwaddr));
+			len += snprintf(page + len, count - len, "rtsen=%d, cts2slef=%d\n", psta->rtsen, psta->cts2self);
+			len += snprintf(page + len, count - len, "qos_en=%d, ht_en=%d, init_rate=%d\n", psta->qos_option, psta->htpriv.ht_option, psta->init_rate);	
+			len += snprintf(page + len, count - len, "state=0x%x, aid=%d, macid=%d, raid=%d\n", psta->state, psta->aid, psta->mac_id, psta->raid);	
+			len += snprintf(page + len, count - len, "bwmode=%d, ch_offset=%d, sgi=%d\n", psta->htpriv.bwmode, psta->htpriv.ch_offset, psta->htpriv.sgi);						
+			len += snprintf(page + len, count - len, "ampdu_enable = %d\n", psta->htpriv.ampdu_enable);									
+			len += snprintf(page + len, count - len, "agg_enable_bitmap=%x, candidate_tid_bitmap=%x\n", psta->htpriv.agg_enable_bitmap, psta->htpriv.candidate_tid_bitmap);
+			len += snprintf(page + len, count - len, "sleepq_len=%d\n", psta->sleepq_len);
+			len += snprintf(page + len, count - len, "capability=0x%x\n", psta->capability);
+			len += snprintf(page + len, count - len, "flags=0x%x\n", psta->flags);
+			len += snprintf(page + len, count - len, "wpa_psk=0x%x\n", psta->wpa_psk);
+			len += snprintf(page + len, count - len, "wpa2_group_cipher=0x%x\n", psta->wpa2_group_cipher);
+			len += snprintf(page + len, count - len, "wpa2_pairwise_cipher=0x%x\n", psta->wpa2_pairwise_cipher);
+			len += snprintf(page + len, count - len, "qos_info=0x%x\n", psta->qos_info);
+			len += snprintf(page + len, count - len, "dot118021XPrivacy=0x%x\n", psta->dot118021XPrivacy);
 								
-				for(j=0;j<16;j++)
-				{							
-					preorder_ctrl = &psta->recvreorder_ctrl[j];
-					if(preorder_ctrl->enable)
-					{
-						len += snprintf(page + len, count - len, "tid=%d, indicate_seq=%d\n", j, preorder_ctrl->indicate_seq);
-					}
-				}		
-									
-			}							
-			
+			for(j=0;j<16;j++)
+			{							
+				preorder_ctrl = &psta->recvreorder_ctrl[j];
+				if(preorder_ctrl->enable)
+				{
+					len += snprintf(page + len, count - len, "tid=%d, indicate_seq=%d\n", j, preorder_ctrl->indicate_seq);
+				}
+			}		
 		}
 		
 	}
@@ -641,10 +636,8 @@ int proc_get_best_channel(char *page, char **start,
 				best_channel_5G = pmlmeext->channel_set[i].ChannelNum;
 			}
 		}
-#if 1 // debug
 		len += snprintf(page + len, count - len, "The rx cnt of channel %3d = %d\n", 
 					pmlmeext->channel_set[i].ChannelNum, pmlmeext->channel_set[i].rx_count);
-#endif
 	}
 	
 	len += snprintf(page + len, count - len, "best_channel_5G = %d\n", best_channel_5G);
