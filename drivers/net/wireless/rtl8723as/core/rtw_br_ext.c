@@ -19,39 +19,22 @@
  ******************************************************************************/
 #define _RTW_BR_EXT_C_
 
-#ifdef __KERNEL__
 #include <linux/if_arp.h>
 #include <net/ip.h>
 #include <net/ipx.h>
 #include <linux/atalk.h>
 #include <linux/udp.h>
 #include <linux/if_pppox.h>
-#endif
 
-#if 1	// rtw_wifi_driver
 #include <drv_conf.h>
 #include <drv_types.h>
 #include "rtw_br_ext.h"
-#else	// rtw_wifi_driver
-#include "./8192cd_cfg.h"
-
-#ifndef __KERNEL__
-#include "./sys-support.h"
-#endif
-
-#include "./8192cd.h"
-#include "./8192cd_headers.h"
-#include "./8192cd_br_ext.h"
-#include "./8192cd_debug.h"
-#endif	// rtw_wifi_driver
 
 #ifdef CL_IPV6_PASS
-#ifdef __KERNEL__
 #include <linux/ipv6.h>
 #include <linux/icmpv6.h>
 #include <net/ndisc.h>
 #include <net/checksum.h>
-#endif
 #endif
 
 #ifdef CONFIG_BR_EXT
@@ -314,16 +297,10 @@ static void convert_ipv6_mac_to_mc(struct sk_buff *skb)
 	struct ipv6hdr *iph = (struct ipv6hdr *)(skb->data + ETH_HLEN);
 	unsigned char *dst_mac = skb->data;
 
-	//dst_mac[0] = 0xff;
-	//dst_mac[1] = 0xff;
 	/*modified by qinjunjie,ipv6 multicast address ix 0x33-33-xx-xx-xx-xx*/
 	dst_mac[0] = 0x33;
 	dst_mac[1] = 0x33;
 	memcpy(&dst_mac[2], &iph->daddr.s6_addr32[3], 4);
-	#if defined(__LINUX_2_6__) 
-	/*modified by qinjunjie,warning:should not remove next line*/
-	skb->pkt_type = PACKET_MULTICAST;
-	#endif
 }
 #endif /* CL_IPV6_PASS */
 
@@ -392,33 +369,25 @@ static __inline__ int __nat25_network_hash(unsigned char *networkAddr)
 static __inline__ void __network_hash_link(_adapter *priv,
 				struct nat25_network_db_entry *ent, int hash)
 {
-	// Caller must _enter_critical_bh already!
-	//_irqL irqL;
-	//_enter_critical_bh(&priv->br_ext_lock, &irqL);
+	// Caller must _enter_critical_bh
 
 	ent->next_hash = priv->nethash[hash];
 	if(ent->next_hash != NULL)
 		ent->next_hash->pprev_hash = &ent->next_hash;
 	priv->nethash[hash] = ent;
 	ent->pprev_hash = &priv->nethash[hash];
-
-	//_exit_critical_bh(&priv->br_ext_lock, &irqL);
 }
 
 
 static __inline__ void __network_hash_unlink(struct nat25_network_db_entry *ent)
 {
-	// Caller must _enter_critical_bh already!
-	//_irqL irqL;
-	//_enter_critical_bh(&priv->br_ext_lock, &irqL);
+	// Caller must _enter_critical_bh
 
 	*(ent->pprev_hash) = ent->next_hash;
 	if(ent->next_hash != NULL)
 		ent->next_hash->pprev_hash = ent->pprev_hash;
 	ent->next_hash = NULL;
 	ent->pprev_hash = NULL;
-
-	//_exit_critical_bh(&priv->br_ext_lock, &irqL);
 }
 
 
@@ -1561,38 +1530,6 @@ int nat25_handle_frame(_adapter *priv, struct sk_buff *skb)
 
 	return 0;
 }
-
-#if 0
-void mac_clone(_adapter *priv, unsigned char *addr)
-{
-	struct sockaddr sa;
-
-	memcpy(sa.sa_data, addr, ETH_ALEN);
-	DEBUG_INFO("MAC Clone: Addr=%02x%02x%02x%02x%02x%02x\n",
-		addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-	rtl8192cd_set_hwaddr(priv->dev, &sa);
-}
-
-
-int mac_clone_handle_frame(_adapter *priv, struct sk_buff *skb)
-{
-	if(priv->ethBrExtInfo.macclone_enable && !priv->macclone_completed)
-	{
-		if(!(skb->data[ETH_ALEN] & 1))	//// check any other particular MAC add
-		{
-                        if(memcmp(skb->data+ETH_ALEN, GET_MY_HWADDR(priv), ETH_ALEN) &&
-				((priv->dev->br_port) &&
-				 memcmp(skb->data+ETH_ALEN, priv->br_mac, ETH_ALEN)))
-			{
-				mac_clone(priv, skb->data+ETH_ALEN);
-				priv->macclone_completed = 1;
-			}
-		}
-	}
-
-	return 0;
-}
-#endif // 0
 
 #define SERVER_PORT			67
 #define CLIENT_PORT			68
