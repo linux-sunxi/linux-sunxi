@@ -27,12 +27,6 @@
 #include <mlme_osdep.h>
 
 
-#if defined (PLATFORM_LINUX) && defined (PLATFORM_WINDOWS)
-
-#error "Shall be Linux or Windows, but not both!\n"
-
-#endif
-
 #include <sta_info.h>
 
 void _rtw_init_stainfo(struct sta_info *psta);
@@ -46,9 +40,6 @@ _func_enter_;
 	 _rtw_spinlock_init(&psta->lock);
 	_rtw_init_listhead(&psta->list);
 	_rtw_init_listhead(&psta->hash_list);
-	//_rtw_init_listhead(&psta->asoc_list);
-	//_rtw_init_listhead(&psta->sleep_list);
-	//_rtw_init_listhead(&psta->wakeup_list);	
 
 	_rtw_init_queue(&psta->sleep_q);
 	psta->sleepq_len = 0;
@@ -109,7 +100,6 @@ _func_enter_;
 
 	_rtw_spinlock_init(&pstapriv->sta_hash_lock);
 	
-	//_rtw_init_queue(&pstapriv->asoc_q);
 	pstapriv->asoc_sta_count = 0;
 	_rtw_init_queue(&pstapriv->sleep_q);
 	_rtw_init_queue(&pstapriv->wakeup_q);
@@ -141,8 +131,6 @@ _func_enter_;
 	
 	pstapriv->auth_to = 3; // 3*2 = 6 sec 
 	pstapriv->assoc_to = 3;
-	//pstapriv->expire_to = 900;// 900*2 = 1800 sec = 30 min, expire after no any traffic.
-	//pstapriv->expire_to = 30;// 30*2 = 60 sec = 1 min, expire after no any traffic.
 	pstapriv->expire_to = 60;// 60*2 = 120 sec = 2 min, expire after no any traffic.
 	
 	pstapriv->max_num_sta = NUM_STA;
@@ -259,7 +247,6 @@ _func_exit_;
 }
 
 
-//struct	sta_info *rtw_alloc_stainfo(_queue *pfree_sta_queue, unsigned char *hwaddr)
 struct	sta_info *rtw_alloc_stainfo(struct	sta_priv *pstapriv, u8 *hwaddr) 
 {	
 	_irqL irqL, irqL2;
@@ -356,7 +343,6 @@ _func_enter_;
 				preorder_ctrl->indicate_seq);
 			#endif
 			preorder_ctrl->wend_b= 0xffff;       
-			//preorder_ctrl->wsize_b = (NR_RECVBUFF-2);
 			preorder_ctrl->wsize_b = 64;//64;
 
 			_rtw_init_queue(&preorder_ctrl->pending_recvframe_queue);
@@ -403,48 +389,26 @@ _func_enter_;
 
 	pstaxmitpriv = &psta->sta_xmitpriv;
 	
-	//rtw_list_delete(&psta->sleep_list);
-	
-	//rtw_list_delete(&psta->wakeup_list);
-	
 	_enter_critical_bh(&pxmitpriv->lock, &irqL0);
 	
 	rtw_free_xmitframe_queue(pxmitpriv, &psta->sleep_q);
 	psta->sleepq_len = 0;
 	
-	//_enter_critical_bh(&(pxmitpriv->vo_pending.lock), &irqL0);
-
 	rtw_free_xmitframe_queue( pxmitpriv, &pstaxmitpriv->vo_q.sta_pending);
 
 	rtw_list_delete(&(pstaxmitpriv->vo_q.tx_pending));
-
-	//_exit_critical_bh(&(pxmitpriv->vo_pending.lock), &irqL0);
-	
-
-	//_enter_critical_bh(&(pxmitpriv->vi_pending.lock), &irqL0);
 
 	rtw_free_xmitframe_queue( pxmitpriv, &pstaxmitpriv->vi_q.sta_pending);
 
 	rtw_list_delete(&(pstaxmitpriv->vi_q.tx_pending));
 
-	//_exit_critical_bh(&(pxmitpriv->vi_pending.lock), &irqL0);
-
-
-	//_enter_critical_bh(&(pxmitpriv->bk_pending.lock), &irqL0);
-
 	rtw_free_xmitframe_queue( pxmitpriv, &pstaxmitpriv->bk_q.sta_pending);
 
 	rtw_list_delete(&(pstaxmitpriv->bk_q.tx_pending));
 
-	//_exit_critical_bh(&(pxmitpriv->bk_pending.lock), &irqL0);
-
-	//_enter_critical_bh(&(pxmitpriv->be_pending.lock), &irqL0);
-
 	rtw_free_xmitframe_queue( pxmitpriv, &pstaxmitpriv->be_q.sta_pending);
 
 	rtw_list_delete(&(pstaxmitpriv->be_q.tx_pending));
-
-	//_exit_critical_bh(&(pxmitpriv->be_pending.lock), &irqL0);
 	
 	_exit_critical_bh(&pxmitpriv->lock, &irqL0);
 	
@@ -508,12 +472,6 @@ _func_enter_;
 		padapter->HalFunc.SetHalODMVarHandler(padapter,HAL_ODM_STA_INFO,psta,_FALSE);
 			
 #ifdef CONFIG_AP_MODE
-
-/*
-	_enter_critical_bh(&pstapriv->asoc_list_lock, &irqL0);
-	rtw_list_delete(&psta->asoc_list);	
-	_exit_critical_bh(&pstapriv->asoc_list_lock, &irqL0);
-*/
 	_enter_critical_bh(&pstapriv->auth_list_lock, &irqL0);
 	rtw_list_delete(&psta->auth_list);
 	_exit_critical_bh(&pstapriv->auth_list_lock, &irqL0);
@@ -535,8 +493,6 @@ _func_enter_;
 	
 	pstapriv->sta_dz_bitmap &=~BIT(psta->aid);
 	pstapriv->tim_bitmap &=~BIT(psta->aid);	
-
-	//rtw_indicate_sta_disassoc_event(padapter, psta);
 
 	if ((psta->aid >0)&&(pstapriv->sta_aid[psta->aid - 1] == psta))
 	{
@@ -672,7 +628,6 @@ u32 rtw_init_bcmc_stainfo(_adapter* padapter)
 	NDIS_802_11_MAC_ADDRESS	bcast_addr= {0xff,0xff,0xff,0xff,0xff,0xff};
 	
 	struct	sta_priv *pstapriv = &padapter->stapriv;
-	//_queue	*pstapending = &padapter->xmitpriv.bm_pending; 
 	
 _func_enter_;
 
@@ -689,15 +644,6 @@ _func_enter_;
 
 	ptxservq= &(psta->sta_xmitpriv.be_q);
 
-/*
-	_enter_critical(&pstapending->lock, &irqL0);
-
-	if (rtw_is_list_empty(&ptxservq->tx_pending))
-		rtw_list_insert_tail(&ptxservq->tx_pending, get_list_head(pstapending));
-
-	_exit_critical(&pstapending->lock, &irqL0);
-*/
-	
 exit:
 _func_exit_;		
 	return _SUCCESS;
