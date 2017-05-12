@@ -174,21 +174,6 @@ _func_enter_;
 				// can't associate ; reset under-linking			
 				_clr_fwstate_(pmlmepriv, _FW_UNDER_LINKING);
 
-#if 0	
-				if((check_fwstate(pmlmepriv, WIFI_STATION_STATE) == _TRUE))
-				{
-					if(_rtw_memcmp(pmlmepriv->cur_network.network.Ssid.Ssid, pmlmepriv->assoc_ssid.Ssid, pmlmepriv->assoc_ssid.SsidLength))
-					{ 
-						// for funk to do roaming
-						// funk will reconnect, but funk will not sitesurvey before reconnect
-						RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("for funk to do roaming"));
-						if(pmlmepriv->sitesurveyctrl.traffic_busy==_FALSE)
-							rtw_sitesurvey_cmd(padapter, &pmlmepriv->assoc_ssid, 1);
-					}
-				
-				}				
-#endif
-
 				//when set_ssid/set_bssid for rtw_do_join(), but there are no desired bss in scanning queue
 				//we try to issue sitesurvey firstly			
 				if(pmlmepriv->LinkDetectInfo.bBusyTraffic==_FALSE
@@ -216,102 +201,6 @@ _func_exit_;
 
 	return ret;	
 }
-
-#ifdef PLATFORM_WINDOWS
-u8 rtw_pnp_set_power_wakeup(_adapter* padapter)
-{
-	u8 res=_SUCCESS;
-
-_func_enter_;
-
-	RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_err_,("==>rtw_pnp_set_power_wakeup!!!\n"));
-	
-	res = rtw_setstandby_cmd(padapter, 0);
-
-	RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_err_,("<==rtw_pnp_set_power_wakeup!!!\n"));
-
-_func_exit_;
-	
-	return res;
-}
-
-u8 rtw_pnp_set_power_sleep(_adapter* padapter)
-{
-	u8 res=_SUCCESS;	
-	
-_func_enter_;
-
-	RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_err_,("==>rtw_pnp_set_power_sleep!!!\n"));
-	//DbgPrint("+rtw_pnp_set_power_sleep\n");
-
-	res = rtw_setstandby_cmd(padapter, 1);
-
-	RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_err_,("<==rtw_pnp_set_power_sleep!!!\n"));
-
-_func_exit_;
-
-	return res;
-}
-
-u8 rtw_set_802_11_reload_defaults(_adapter * padapter, NDIS_802_11_RELOAD_DEFAULTS reloadDefaults)
-{
-_func_enter_;
-
-	switch( reloadDefaults)
-	{
-		case Ndis802_11ReloadWEPKeys:
-			RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("SetInfo OID_802_11_RELOAD_DEFAULTS : Ndis802_11ReloadWEPKeys\n"));
-			break;
-	}
-
-	// SecClearAllKeys(Adapter);
-	// 8711 CAM was not for En/Decrypt only
-	// so, we can't clear all keys.
-	// should we disable WPAcfg (ox0088) bit 1-2, instead of clear all CAM
-	
-	//TO DO...
-
-_func_exit_;
-	
-	return _TRUE;
-}
-
-u8 set_802_11_test(_adapter* padapter, NDIS_802_11_TEST *test)
-{
-	u8 ret=_TRUE;
-	
-_func_enter_;
-
-	switch(test->Type)
-	{
-		case 1:
-			NdisMIndicateStatus(padapter->hndis_adapter, NDIS_STATUS_MEDIA_SPECIFIC_INDICATION, (PVOID)&test->AuthenticationEvent, test->Length - 8);
-			NdisMIndicateStatusComplete(padapter->hndis_adapter);
-			break;
-
-		case 2:
-			NdisMIndicateStatus(padapter->hndis_adapter, NDIS_STATUS_MEDIA_SPECIFIC_INDICATION, (PVOID)&test->RssiTrigger, sizeof(NDIS_802_11_RSSI));
-			NdisMIndicateStatusComplete(padapter->hndis_adapter);
-			break;
-
-		default:
-			ret=_FALSE;
-			break;
-	}
-
-_func_exit_;
-
-	return ret;	
-}
-
-u8	rtw_set_802_11_pmkid(_adapter*	padapter, NDIS_802_11_PMKID *pmkid)
-{
-	u8	ret=_SUCCESS;
-
-	return ret;
-}
-
-#endif
 
 u8 rtw_set_802_11_bssid(_adapter* padapter, u8 *bssid)
 {	
@@ -373,7 +262,6 @@ _func_enter_;
 handle_tkip_countermeasure:
 	//should we add something here...?
 
-#ifdef PLATFORM_LINUX
 	if (padapter->securitypriv.btkip_countermeasure == _TRUE) {
 		cur_time = rtw_get_current_time();
 
@@ -388,7 +276,6 @@ handle_tkip_countermeasure:
 			goto release_mlme_lock;
 		}
 	}
-#endif
 
 	_rtw_memcpy(&pmlmepriv->assoc_bssid, bssid, ETH_ALEN);
 	pmlmepriv->assoc_by_bssid=_TRUE;
@@ -504,34 +391,6 @@ _func_enter_;
 	}
 
 handle_tkip_countermeasure:
-#ifdef PLATFORM_WINDOWS
-	if (padapter->securitypriv.btkip_countermeasure==_TRUE)
-	{
-		LARGE_INTEGER	sys_time;
-		u32  diff_time,cur_time ;
-		RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("rtw_set_802_11_ssid:padapter->securitypriv.btkip_countermeasure==_TRUE\n"));
-		NdisGetCurrentSystemTime(&sys_time);	
-		cur_time=(u32)(sys_time.QuadPart/10);  // In micro-second.
-		RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("rtw_set_802_11_ssid:cur_time=0x%x\n",cur_time));
-		RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("rtw_set_802_11_ssid:psecuritypriv->last_mic_err_time=0x%x\n",padapter->securitypriv.btkip_countermeasure_time));
-		diff_time = cur_time -padapter->securitypriv.btkip_countermeasure_time; // In micro-second.
-		RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("rtw_set_802_11_ssid:diff_time=0x%x\n",diff_time));
-
-		if (diff_time > 60000000) {
-			RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("rtw_set_802_11_ssid(): countermeasure time >60s.\n"));
-			padapter->securitypriv.btkip_countermeasure=_FALSE;
-			// Update MIC error time.
-			padapter->securitypriv.btkip_countermeasure_time=0;
-		} else {
-			// can't join  in 60 seconds.
-			status = _FAIL;
-			RT_TRACE(_module_rtl871x_ioctl_set_c_,_drv_info_,("rtw_set_802_11_ssid(): countermeasure time <60s.\n"));
-			goto release_mlme_lock;
-		}
-	}
-#endif
-
-#ifdef PLATFORM_LINUX
 	if (padapter->securitypriv.btkip_countermeasure == _TRUE) {
 		cur_time = rtw_get_current_time();
 
@@ -546,7 +405,6 @@ handle_tkip_countermeasure:
 			goto release_mlme_lock;
 		}
 	}
-#endif
 
 	#ifdef CONFIG_VALIDATE_SSID
 	if (rtw_validate_ssid(ssid) == _FALSE) {
