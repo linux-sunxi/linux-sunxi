@@ -880,7 +880,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 
 	ccm_fmt.code = csi_fmt->ccm_fmt;//linux-3.0
 	ccm_fmt.width = f->fmt.pix.width;//linux-3.0
-	ccm_fmt.height = f->fmt.pix.width;//linux-3.0
+	ccm_fmt.height = f->fmt.pix.height;//linux-3.0
 
 	ret = v4l2_subdev_call(dev->sd,video,s_mbus_fmt,&ccm_fmt);//linux-3.0
 	if (ret < 0) {
