@@ -874,6 +874,12 @@ config  TOUCHSCREEN_GT818
        help
           GT801 touchscreen driver
 
+config  TOUCHSCREEN_GT9XX
+       tristate  "gt9xx touchscreen driver"
+       depends on I2C
+       help
+          gt9xx touchscreen driver
+
 config  TOUCHSCREEN_SUN4I_TS
        tristate  "sun4i-ts touchscreen driver"
        help

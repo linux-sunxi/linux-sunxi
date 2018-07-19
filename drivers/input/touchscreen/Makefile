@@ -79,4 +79,4 @@ obj-$(CONFIG_TOUCHSCREEN_ZT8031)         += zt8031.o
 obj-$(CONFIG_TOUCHSCREEN_COASIA)         += coasia_i2c.o
 obj-$(CONFIG_TOUCHSCREEN_SUN4I_TS)         += sun4i-ts.o
 obj-$(CONFIG_ADS7846_DEVICE)           += ads7846_device.o
-
+obj-$(CONFIG_TOUCHSCREEN_GT9XX)         += gt9xx.o
