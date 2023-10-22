@@ -87,14 +87,20 @@
 #ifdef CONFIG_QUOTA
 /* Amount of blocks needed for quota update - we know that the structure was
  * allocated so we need to update only data block */
-#define EXT4_QUOTA_TRANS_BLOCKS(sb) (test_opt(sb, QUOTA) ? 1 : 0)
+#define EXT4_QUOTA_TRANS_BLOCKS(sb) ((test_opt(sb, QUOTA) ||\
+		EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_QUOTA)) ?\
+		1 : 0)
 /* Amount of blocks needed for quota insert/delete - we do some block writes
  * but inode, sb and group updates are done only once */
-#define EXT4_QUOTA_INIT_BLOCKS(sb) (test_opt(sb, QUOTA) ? (DQUOT_INIT_ALLOC*\
-		(EXT4_SINGLEDATA_TRANS_BLOCKS(sb)-3)+3+DQUOT_INIT_REWRITE) : 0)
+#define EXT4_QUOTA_INIT_BLOCKS(sb) ((test_opt(sb, QUOTA) ||\
+		EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_QUOTA)) ?\
+		(DQUOT_INIT_ALLOC*(EXT4_SINGLEDATA_TRANS_BLOCKS(sb)-3)\
+		 +3+DQUOT_INIT_REWRITE) : 0)
 
-#define EXT4_QUOTA_DEL_BLOCKS(sb) (test_opt(sb, QUOTA) ? (DQUOT_DEL_ALLOC*\
-		(EXT4_SINGLEDATA_TRANS_BLOCKS(sb)-3)+3+DQUOT_DEL_REWRITE) : 0)
+#define EXT4_QUOTA_DEL_BLOCKS(sb) ((test_opt(sb, QUOTA) ||\
+		EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_QUOTA)) ?\
+		(DQUOT_DEL_ALLOC*(EXT4_SINGLEDATA_TRANS_BLOCKS(sb)-3)\
+		 +3+DQUOT_DEL_REWRITE) : 0)
 #else
 #define EXT4_QUOTA_TRANS_BLOCKS(sb) 0
 #define EXT4_QUOTA_INIT_BLOCKS(sb) 0
@@ -164,20 +170,16 @@ static inline void ext4_journal_callback_add(handle_t *handle,
  * ext4_journal_callback_del: delete a registered callback
  * @handle: active journal transaction handle on which callback was registered
  * @jce: registered journal callback entry to unregister
- * Return true if object was sucessfully removed
  */
-static inline bool ext4_journal_callback_try_del(handle_t *handle,
+static inline void ext4_journal_callback_del(handle_t *handle,
 					     struct ext4_journal_cb_entry *jce)
 {
-	bool deleted;
 	struct ext4_sb_info *sbi =
 			EXT4_SB(handle->h_transaction->t_journal->j_private);
 
 	spin_lock(&sbi->s_md_lock);
-	deleted = !list_empty(&jce->jce_list);
 	list_del_init(&jce->jce_list);
 	spin_unlock(&sbi->s_md_lock);
-	return deleted;
 }
 
 int
